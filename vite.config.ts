@@ -13,6 +13,9 @@ const config = defineConfig({
     tanstackStart(),
     viteReact(),
   ],
+  resolve: {
+    dedupe: ['yjs'],
+  },
 });
 
 export default config;

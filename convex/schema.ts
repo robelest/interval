@@ -3,14 +3,25 @@ import { v } from 'convex/values';
 import { replicatedTable } from '@trestleinc/replicate/server';
 
 export default defineSchema({
-  tasks: replicatedTable(
+  notebooks: replicatedTable(
     {
-      // User-defined business logic fields only
-      // version and timestamp are auto-injected by replicatedTable
       id: v.string(),
-      text: v.string(),
-      isCompleted: v.boolean(),
+      title: v.string(),
+      // Content stored as Y.XmlFragment, materialized as ProseMirror/BlockNote JSON
+      content: v.any(),
+      createdAt: v.number(),
+      updatedAt: v.number(),
+      // Plain text extracted from content for search indexing
+      plainText: v.optional(v.string()),
     },
-    (table: TableDefinition) => table.index('by_user_id', ['id']).index('by_timestamp', ['timestamp'])
+    (table: TableDefinition) =>
+      table
+        .index('by_notebook_id', ['id'])
+        .index('by_timestamp', ['timestamp'])
+        .index('by_updated', ['updatedAt'])
+        .searchIndex('search_content', {
+          searchField: 'plainText',
+          filterFields: ['id'],
+        })
   ),
 });

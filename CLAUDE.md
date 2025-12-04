@@ -31,30 +31,47 @@ Copy `.env.example` to `.env` and set `VITE_CONVEX_URL` to your Convex deploymen
 
 ## Architecture
 
-This is a TanStack Start + Convex application demonstrating real-time CRDT-based sync using `@trestleinc/replicate`.
+A Notion-style notebook app built with TanStack Start + Convex + BlockNote, using `@trestleinc/replicate` for CRDT-based real-time sync.
 
 ### Stack
 
 - **Framework**: TanStack Start (SSR with TanStack Router)
+- **Editor**: BlockNote (Notion-style block editor with native Yjs collaboration)
 - **Backend**: Convex (real-time database with WebSocket sync)
-- **Sync Layer**: `@trestleinc/replicate` for CRDT-based offline-first replication
+- **Sync Layer**: `@trestleinc/replicate` fragments for CRDT-based offline-first rich text sync
 - **State**: TanStack DB + React Query for client-side reactive data
-- **Styling**: Tailwind CSS v4 with Rose Pine theme colors
+- **Styling**: Tailwind CSS v4 with Rose Pine theme, Fraunces + Instrument Sans typography
 
 ### Key Patterns
 
-**SSR with Progressive Enhancement**: Routes load initial data via `ConvexHttpClient` (HTTP), then hydrate with live `ConvexClient` (WebSocket) for real-time updates. See `src/routes/index.tsx` for the `StaticTasksView` → `LiveTasksView` pattern using `ClientOnly`.
+**Replicate Fragments for Rich Text**: BlockNote content is stored as Y.XmlFragment via Replicate's `fragment()` helper. The editor binds directly to the live fragment:
+```typescript
+const fragment = collection.fragment(notebookId, 'content');
+const editor = useCreateBlockNote({
+  collaboration: { provider, fragment, user }
+});
+```
 
-**Replicate Collections**: Define synced collections in `convex/tasks.ts` using `defineReplicate()`, then consume them client-side via `useTasks()` hook which creates a singleton collection with `convexCollectionOptions()`.
+**SSR with Progressive Enhancement**: Routes load initial data via `ConvexHttpClient`, render static content with `StaticNotebookView`, then hydrate to `NotebookEditor` with BlockNote after `ClientOnly`.
 
-**Schema Definition**: Use `replicatedTable()` wrapper in `convex/schema.ts` which auto-injects `version` and `timestamp` fields for CRDT operations.
+**Collection Hook**: `useNotebooks()` creates a singleton collection with `convexCollectionOptions()` and handles reconnection.
 
 ### File Structure
 
 - `src/routes/` - TanStack Router file-based routes
-- `src/routeTree.gen.ts` - Auto-generated route tree (do not edit)
-- `convex/` - Convex backend (schema, mutations, crons)
-- `convex/_generated/` - Auto-generated Convex types (do not edit)
+  - `notebooks/$notebookId.tsx` - Individual notebook editor
+  - `notebooks/index.tsx` - Redirects to first notebook
+- `src/components/` - React components
+  - `Sidebar.tsx` - Navigation, create/rename/delete notebooks
+  - `NotebookEditor.tsx` - BlockNote with Replicate fragment binding
+  - `SearchPanel.tsx` - Cmd+K search across notebooks
+- `src/collections/useNotebooks.ts` - Notebook collection hook
+- `convex/notebooks.ts` - Replicate backend (stream, material, insert, update, remove)
+- `convex/schema.ts` - Notebook schema with search index
+
+### Keyboard Shortcuts
+
+- `Cmd+K` / `Ctrl+K` - Open search panel
 
 ### Convex Crons
 
