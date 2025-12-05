@@ -1,39 +1,21 @@
-import type { BlockContent } from '../types/notebook';
-
-interface FragmentWrapper {
-  __fragment: true;
-  content: ProseMirrorDoc;
-}
-
-interface ProseMirrorDoc {
-  type: string;
-  content?: BlockContent[];
-}
-
-type ContentInput = FragmentWrapper | ProseMirrorDoc | null | undefined;
+import type { XmlFragmentJSON, XmlNodeJSON } from '@trestleinc/replicate/client';
 
 interface ContentRendererProps {
-  content: ContentInput;
+  content: XmlFragmentJSON;
 }
 
 /**
  * Renders BlockNote/ProseMirror JSON content as static HTML for SSR.
+ * Expects XmlFragmentJSON: { type: 'doc', content?: XmlNodeJSON[] }
  */
 export function ContentRenderer({ content }: ContentRendererProps) {
-  if (!content) {
-    return <p className="text-muted italic">Empty page</p>;
-  }
-
-  // Unwrap Replicate fragment marker: { __fragment: true, content: { type: 'doc', content: [...] } }
-  const doc: ProseMirrorDoc = '__fragment' in content ? content.content : content;
-
-  if (!doc?.content || !Array.isArray(doc.content)) {
+  if (!content?.content?.length) {
     return <p className="text-muted italic">Empty page</p>;
   }
 
   return (
     <div className="prose prose-notebook">
-      {doc.content.map((block, i) => (
+      {content.content.map((block, i) => (
         <BlockRenderer key={i} node={block} />
       ))}
     </div>
@@ -41,7 +23,7 @@ export function ContentRenderer({ content }: ContentRendererProps) {
 }
 
 interface BlockRendererProps {
-  node: BlockContent;
+  node: XmlNodeJSON;
 }
 
 function BlockRenderer({ node }: BlockRendererProps) {
@@ -158,7 +140,7 @@ function BlockRenderer({ node }: BlockRendererProps) {
 }
 
 interface InlineRendererProps {
-  content?: BlockContent[];
+  content?: XmlNodeJSON[];
 }
 
 function InlineRenderer({ content }: InlineRendererProps) {
