@@ -1,4 +1,4 @@
-import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router';
+import { createFileRoute, redirect, useNavigate, ClientOnly } from '@tanstack/react-router';
 import { ConvexHttpClient } from 'convex/browser';
 import { Plus } from 'lucide-react';
 import { api } from '../../../convex/_generated/api';
@@ -27,6 +27,54 @@ export const Route = createFileRoute('/notebooks/')({
 });
 
 function NotebooksIndexComponent() {
+  return (
+    <ClientOnly fallback={<WelcomePageFallback />}>
+      <LiveWelcomePage />
+    </ClientOnly>
+  );
+}
+
+function WelcomePageFallback() {
+  return (
+    <div className="welcome-page">
+      <div className="welcome-content">
+        <div className="welcome-flourish">
+          <svg
+            viewBox="0 0 120 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1"
+            strokeLinecap="round"
+          >
+            <path d="M60 4 L64 12 L60 20 L56 12 Z" />
+            <path d="M52 12 Q40 12 30 8" />
+            <path d="M52 12 Q40 12 30 16" />
+            <path d="M28 8 Q20 6 10 12" />
+            <path d="M28 16 Q20 18 10 12" />
+            <circle cx="8" cy="12" r="2" />
+            <path d="M68 12 Q80 12 90 8" />
+            <path d="M68 12 Q80 12 90 16" />
+            <path d="M92 8 Q100 6 110 12" />
+            <path d="M92 16 Q100 18 110 12" />
+            <circle cx="112" cy="12" r="2" />
+          </svg>
+        </div>
+        <h1 className="welcome-title">Start Writing</h1>
+        <p className="welcome-subtitle">
+          Your thoughts deserve a beautiful home.
+          <br />
+          Create your first page and let the words flow.
+        </p>
+        <button type="button" disabled className="welcome-cta">
+          <Plus className="w-5 h-5" />
+          <span>Loading...</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function LiveWelcomePage() {
   const navigate = useNavigate();
   const collection = useNotebooks();
 
@@ -51,7 +99,6 @@ function NotebooksIndexComponent() {
   return (
     <div className="welcome-page">
       <div className="welcome-content">
-        {/* Decorative flourish - editorial style ornament */}
         <div className="welcome-flourish">
           <svg
             viewBox="0 0 120 24"
@@ -60,15 +107,12 @@ function NotebooksIndexComponent() {
             strokeWidth="1"
             strokeLinecap="round"
           >
-            {/* Center diamond */}
             <path d="M60 4 L64 12 L60 20 L56 12 Z" />
-            {/* Left flourish */}
             <path d="M52 12 Q40 12 30 8" />
             <path d="M52 12 Q40 12 30 16" />
             <path d="M28 8 Q20 6 10 12" />
             <path d="M28 16 Q20 18 10 12" />
             <circle cx="8" cy="12" r="2" />
-            {/* Right flourish */}
             <path d="M68 12 Q80 12 90 8" />
             <path d="M68 12 Q80 12 90 16" />
             <path d="M92 8 Q100 6 110 12" />
