@@ -6,5 +6,4 @@ export interface Notebook {
   content: XmlFragmentJSON; // ProseMirror-compatible JSON from replicate
   createdAt: number;
   updatedAt: number;
-  plainText?: string;
 }

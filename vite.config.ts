@@ -5,6 +5,9 @@ import { defineConfig } from 'vite';
 import viteTsConfigPaths from 'vite-tsconfig-paths';
 
 const config = defineConfig({
+  server: {
+    port: 5000,
+  },
   plugins: [
     viteTsConfigPaths({
       projects: ['./tsconfig.json'],

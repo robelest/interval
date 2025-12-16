@@ -1,58 +1,58 @@
 import { Link, useNavigate, useParams } from '@tanstack/react-router';
-import { useLiveQuery } from '@tanstack/react-db';
-import { Plus, Search, FileText, MoreHorizontal, Trash2, Pencil } from 'lucide-react';
+import { Plus, Search, FileText, Trash2 } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
-import { fragment } from '@trestleinc/replicate/client';
-import type { ConvexCollection, Notebook } from '../collections/useNotebooks';
+import { useNotebooksContext } from '../contexts/NotebooksContext';
+import type { Notebook } from '../collections/useNotebooks';
 
 interface SidebarProps {
-  collection: ConvexCollection<Notebook>;
   onSearchOpen: () => void;
 }
 
-export function Sidebar({ collection, onSearchOpen }: SidebarProps) {
-  const { data: notebooks = [], isLoading } = useLiveQuery(collection as any);
+export function Sidebar({ onSearchOpen }: SidebarProps) {
+  const { collection, notebooks, isLoading } = useNotebooksContext();
   const navigate = useNavigate();
   const params = useParams({ strict: false });
   const activeId = (params as { notebookId?: string }).notebookId;
 
-  const [contextMenu, setContextMenu] = useState<{ id: string; x: number; y: number } | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const editInputRef = useRef<HTMLInputElement>(null);
 
-  // Sort by updatedAt descending
-  const sortedNotebooks = [...notebooks].sort((a, b) => b.updatedAt - a.updatedAt);
+  // Filter out items without valid ids (can occur during sync) and sort by updatedAt descending
+  const sortedNotebooks = [...(notebooks as Notebook[])]
+    .filter((n): n is Notebook => typeof n.id === 'string' && n.id.length > 0)
+    .sort((a, b) => b.updatedAt - a.updatedAt);
 
   const handleCreateNew = async () => {
     const id = crypto.randomUUID();
     const now = Date.now();
 
-    await collection.insert({
+    console.log('[NOTEBOOK] Creating notebook:', id);
+
+    const result = collection.insert({
       id,
       title: 'Untitled',
-      content: fragment({
+      content: {
         type: 'doc',
         content: [{ type: 'paragraph' }],
-      }),
+      },
       createdAt: now,
       updatedAt: now,
     } as Notebook);
 
+    console.log('[NOTEBOOK] Insert returned:', result);
+
+    // Wait for optimistic update to propagate
+    await new Promise((r) => setTimeout(r, 100));
+
     navigate({ to: '/notebooks/$notebookId', params: { notebookId: id } });
   };
 
-  const handleContextMenu = (e: React.MouseEvent, id: string) => {
-    e.preventDefault();
-    setContextMenu({ id, x: e.clientX, y: e.clientY });
-  };
-
-  const handleRename = (id: string) => {
+  const handleStartRename = (id: string) => {
     const notebook = notebooks.find((n) => n.id === id);
     if (notebook) {
       setEditingId(id);
       setEditTitle(notebook.title);
-      setContextMenu(null);
     }
   };
 
@@ -66,9 +66,10 @@ export function Sidebar({ collection, onSearchOpen }: SidebarProps) {
     setEditingId(null);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = (e: React.MouseEvent, id: string) => {
+    e.preventDefault();
+    e.stopPropagation();
     collection.delete(id);
-    setContextMenu(null);
     if (activeId === id) {
       const remaining = notebooks.filter((n) => n.id !== id);
       if (remaining.length > 0) {
@@ -78,15 +79,6 @@ export function Sidebar({ collection, onSearchOpen }: SidebarProps) {
       }
     }
   };
-
-  // Close context menu on click outside
-  useEffect(() => {
-    const handleClick = () => setContextMenu(null);
-    if (contextMenu) {
-      document.addEventListener('click', handleClick);
-      return () => document.removeEventListener('click', handleClick);
-    }
-  }, [contextMenu]);
 
   // Focus edit input when editing
   useEffect(() => {
@@ -99,7 +91,9 @@ export function Sidebar({ collection, onSearchOpen }: SidebarProps) {
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
-        <h1 className="sidebar-title">Notebook</h1>
+        <Link to="/notebooks" className="sidebar-title">
+          Notebook
+        </Link>
         <button
           type="button"
           onClick={onSearchOpen}
@@ -153,21 +147,26 @@ export function Sidebar({ collection, onSearchOpen }: SidebarProps) {
                     to="/notebooks/$notebookId"
                     params={{ notebookId: notebook.id }}
                     className={`sidebar-item ${activeId === notebook.id ? 'sidebar-item-active' : ''}`}
-                    onContextMenu={(e) => handleContextMenu(e, notebook.id)}
                   >
                     <FileText className="w-4 h-4 shrink-0" />
-                    <span className="sidebar-item-title">{notebook.title || 'Untitled'}</span>
                     <button
                       type="button"
-                      onClick={(e) => {
+                      className="sidebar-item-title"
+                      onDoubleClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        handleContextMenu(e, notebook.id);
+                        handleStartRename(notebook.id);
                       }}
-                      className="sidebar-item-menu"
-                      aria-label="Notebook options"
                     >
-                      <MoreHorizontal className="w-4 h-4" />
+                      {notebook.title || 'Untitled'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => handleDelete(e, notebook.id)}
+                      className="sidebar-item-delete"
+                      aria-label="Delete notebook"
+                    >
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   </Link>
                 )}
@@ -176,31 +175,6 @@ export function Sidebar({ collection, onSearchOpen }: SidebarProps) {
           </ul>
         )}
       </nav>
-
-      {/* Context Menu */}
-      {contextMenu && (
-        <div
-          className="context-menu"
-          style={{ top: contextMenu.y, left: contextMenu.x }}
-        >
-          <button
-            type="button"
-            onClick={() => handleRename(contextMenu.id)}
-            className="context-menu-item"
-          >
-            <Pencil className="w-4 h-4" />
-            <span>Rename</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => handleDelete(contextMenu.id)}
-            className="context-menu-item context-menu-item-danger"
-          >
-            <Trash2 className="w-4 h-4" />
-            <span>Delete</span>
-          </button>
-        </div>
-      )}
     </aside>
   );
 }

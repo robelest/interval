@@ -1,35 +1,70 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { useQuery } from 'convex/react';
 import { Search, FileText, X } from 'lucide-react';
-import { api } from '../../convex/_generated/api';
+import { extract } from '@trestleinc/replicate/client';
+import { useNotebooksContext } from '../contexts/NotebooksContext';
+import type { Notebook } from '../collections/useNotebooks';
 
 interface SearchPanelProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
+const SEARCH_DEBOUNCE_MS = 150;
+
 export function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
   const [query, setQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
-  const results = useQuery(api.notebooks.search, { query }) || [];
+  // Use context instead of direct useLiveQuery - single subscription at root
+  const { notebooks } = useNotebooksContext();
 
-  // Focus input when opened
+  // Debounce search query to avoid expensive fragmentToText calls on every keystroke
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(query);
+    }, SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  // Memoize text extraction per notebook to avoid repeated parsing
+  const notebooksWithText = useMemo(
+    () =>
+      (notebooks as Notebook[]).map((n) => ({
+        ...n,
+        textContent: extract(n.content).toLowerCase(),
+      })),
+    [notebooks]
+  );
+
+  // Filter locally - search both title and content (uses debounced query)
+  const results = useMemo(() => {
+    if (!debouncedQuery.trim()) return [];
+    const q = debouncedQuery.toLowerCase();
+    return notebooksWithText
+      .filter((n) => n.title?.toLowerCase().includes(q) || n.textContent.includes(q))
+      .slice(0, 20);
+  }, [notebooksWithText, debouncedQuery]);
+
+  // Focus input and reset state when opened
   useEffect(() => {
     if (isOpen && inputRef.current) {
       inputRef.current.focus();
       setQuery('');
+      setDebouncedQuery('');
       setSelectedIndex(0);
     }
   }, [isOpen]);
 
-  // Reset selection when results change
+  // Reset selection when results change - ensure index is valid
   useEffect(() => {
-    setSelectedIndex(0);
-  }, [results]);
+    if (results.length > 0 && selectedIndex >= results.length) {
+      setSelectedIndex(0);
+    }
+  }, [results.length, selectedIndex]);
 
   // Handle keyboard navigation
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -70,7 +105,12 @@ export function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="search-backdrop" onClick={handleBackdropClick}>
+    <dialog
+      className="search-backdrop"
+      open
+      onClick={handleBackdropClick}
+      onKeyDown={(e) => e.key === 'Escape' && onClose()}
+    >
       <div className="search-panel">
         <div className="search-input-wrapper">
           <Search className="search-icon" />
@@ -110,9 +150,9 @@ export function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
                     <FileText className="w-4 h-4 shrink-0" />
                     <div className="search-item-content">
                       <span className="search-item-title">{notebook.title || 'Untitled'}</span>
-                      {notebook.plainText && (
+                      {notebook.textContent && (
                         <span className="search-item-preview">
-                          {truncate(notebook.plainText, 80)}
+                          {truncate(notebook.textContent, 80)}
                         </span>
                       )}
                     </div>
@@ -123,11 +163,11 @@ export function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
           )}
         </div>
       </div>
-    </div>
+    </dialog>
   );
 }
 
 function truncate(str: string, length: number): string {
   if (str.length <= length) return str;
-  return str.slice(0, length) + '...';
+  return `${str.slice(0, length)}...`;
 }

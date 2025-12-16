@@ -11,11 +11,14 @@ import {
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools';
 import { configure, getConsoleSink, type LogRecord } from '@logtape/logtape';
 import { ConvexProvider, ConvexReactClient } from 'convex/react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from '@tanstack/react-router';
+import { useHotkeys } from 'react-hotkeys-hook';
 import { ConvexRxErrorBoundary } from '../components/ErrorBoundary';
 import { Sidebar } from '../components/Sidebar';
 import { SearchPanel } from '../components/SearchPanel';
-import { useNotebooks } from '../collections/useNotebooks';
+import { NotebooksProvider, useNotebooksContext } from '../contexts/NotebooksContext';
+import type { Notebook } from '../collections/useNotebooks';
 
 import appCss from '../styles.css?url';
 
@@ -54,7 +57,7 @@ try {
 }
 
 // Create Convex client for React context
-const convexUrl = (import.meta as any).env.VITE_CONVEX_URL;
+const convexUrl = import.meta.env.VITE_CONVEX_URL;
 const convexReactClient = convexUrl ? new ConvexReactClient(convexUrl) : null;
 
 interface RouterContext {
@@ -69,6 +72,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       { title: 'Notebook' },
     ],
     links: [
+      { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
       { rel: 'stylesheet', href: appCss },
       // Load distinctive fonts
       { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
@@ -155,11 +159,52 @@ interface LiveAppLayoutProps {
 }
 
 function LiveAppLayout({ isSearchOpen, onSearchOpen, onSearchClose }: LiveAppLayoutProps) {
-  const collection = useNotebooks();
+  return (
+    <NotebooksProvider>
+      <AppContent
+        isSearchOpen={isSearchOpen}
+        onSearchOpen={onSearchOpen}
+        onSearchClose={onSearchClose}
+      />
+    </NotebooksProvider>
+  );
+}
+
+function AppContent({ isSearchOpen, onSearchOpen, onSearchClose }: LiveAppLayoutProps) {
+  const { collection } = useNotebooksContext();
+  const navigate = useNavigate();
+
+  const createNewNotebook = useCallback(async () => {
+    const id = crypto.randomUUID();
+    const now = Date.now();
+
+    await collection.insert({
+      id,
+      title: 'Untitled',
+      content: {
+        type: 'doc',
+        content: [{ type: 'paragraph' }],
+      },
+      createdAt: now,
+      updatedAt: now,
+    } as Notebook);
+
+    navigate({ to: '/notebooks/$notebookId', params: { notebookId: id } });
+  }, [collection, navigate]);
+
+  // Global Alt+N to create new notebook
+  useHotkeys(
+    'alt+n',
+    () => {
+      createNewNotebook();
+    },
+    { preventDefault: true },
+    [createNewNotebook]
+  );
 
   return (
     <div className="app-layout">
-      <Sidebar collection={collection} onSearchOpen={onSearchOpen} />
+      <Sidebar onSearchOpen={onSearchOpen} />
       <main className="main-content">
         <Outlet />
       </main>

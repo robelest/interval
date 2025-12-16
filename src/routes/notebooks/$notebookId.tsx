@@ -1,68 +1,70 @@
 import { createFileRoute, ClientOnly } from '@tanstack/react-router';
 import { ConvexHttpClient } from 'convex/browser';
 import { api } from '../../../convex/_generated/api';
-import { useNotebooks } from '../../collections/useNotebooks';
+import { useNotebooksContext } from '../../contexts/NotebooksContext';
 import { NotebookEditor } from '../../components/NotebookEditor';
 import { StaticNotebookView } from '../../components/StaticNotebookView';
 import type { Notebook } from '../../types/notebook';
-import type { Materialized } from '@trestleinc/replicate/client';
-
-const httpClient = new ConvexHttpClient((import.meta as any).env.VITE_CONVEX_URL!);
 
 export const Route = createFileRoute('/notebooks/$notebookId')({
   loader: async ({ params }) => {
-    // Fetch both the specific notebook and material for SSR
-    const [notebook, material] = await Promise.all([
-      httpClient.query(api.notebooks.get, { id: params.notebookId }),
-      httpClient.query(api.notebooks.material),
-    ]);
+    const convexUrl = import.meta.env.VITE_CONVEX_URL;
+    if (!convexUrl) return { notebook: null };
 
-    if (!notebook) {
-      throw new Error('Notebook not found');
+    const httpClient = new ConvexHttpClient(convexUrl);
+    try {
+      const notebook = await httpClient.query(api.notebooks.get, { id: params.notebookId });
+      return { notebook };
+    } catch {
+      return { notebook: null };
     }
-
-    return { notebook, material };
   },
   component: NotebookPageComponent,
-  errorComponent: NotebookErrorComponent,
 });
 
 function NotebookPageComponent() {
-  const { notebook, material } = Route.useLoaderData();
   const { notebookId } = Route.useParams();
+  const { notebook: ssrNotebook } = Route.useLoaderData();
 
   return (
     <ClientOnly
-      fallback={<StaticNotebookView notebook={notebook as Notebook} />}
+      fallback={
+        ssrNotebook ? (
+          <StaticNotebookView notebook={ssrNotebook as Notebook} />
+        ) : (
+          <NotebookLoading />
+        )
+      }
     >
-      <LiveNotebookView
-        notebookId={notebookId}
-        initialNotebook={notebook as Notebook}
-        material={material as Materialized<Notebook>}
-      />
+      <LiveNotebookView notebookId={notebookId} />
     </ClientOnly>
   );
 }
 
-interface LiveNotebookViewProps {
-  notebookId: string;
-  initialNotebook: Notebook;
-  material: Materialized<Notebook>;
+function LiveNotebookView({ notebookId }: { notebookId: string }) {
+  const { collection, notebooks, isLoading } = useNotebooksContext();
+  const notebook = notebooks.find((n) => n.id === notebookId);
+
+  if (isLoading) {
+    return <NotebookLoading />;
+  }
+
+  if (!notebook) {
+    return <NotebookNotFound />;
+  }
+
+  return <NotebookEditor notebookId={notebookId} collection={collection} notebook={notebook} />;
 }
 
-function LiveNotebookView({ notebookId, initialNotebook, material }: LiveNotebookViewProps) {
-  const collection = useNotebooks(material);
-
+function NotebookLoading() {
   return (
-    <NotebookEditor
-      notebookId={notebookId}
-      collection={collection}
-      notebook={initialNotebook}
-    />
+    <div className="notebook-loading">
+      <div className="notebook-loading-pulse" />
+    </div>
   );
 }
 
-function NotebookErrorComponent({ error }: { error: Error }) {
+function NotebookNotFound() {
   return (
     <div className="error-state">
       <div className="error-state-content">
@@ -74,14 +76,17 @@ function NotebookErrorComponent({ error }: { error: Error }) {
             strokeWidth="1.5"
             strokeLinecap="round"
             strokeLinejoin="round"
+            aria-labelledby="error-icon-title"
+            role="img"
           >
+            <title id="error-icon-title">Error icon</title>
             <circle cx="12" cy="12" r="10" />
             <line x1="12" y1="8" x2="12" y2="12" />
             <line x1="12" y1="16" x2="12.01" y2="16" />
           </svg>
         </div>
         <h2>Notebook not found</h2>
-        <p>{error.message}</p>
+        <p>This notebook doesn't exist or was deleted.</p>
         <a href="/notebooks" className="error-state-link">
           Go back to notebooks
         </a>
