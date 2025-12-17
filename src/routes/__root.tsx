@@ -158,7 +158,8 @@ function KeyboardShortcuts({ onSearchOpen }: { onSearchOpen: () => void }) {
       }
 
       // Option+N (Alt+N): Create new notebook
-      if (e.altKey && e.key === 'n') {
+      // Use e.code for Mac compatibility (Option key produces special chars like ñ)
+      if (e.altKey && e.code === 'KeyN') {
         e.preventDefault();
         createNotebook();
       }

@@ -41,11 +41,15 @@ export function NotebookEditor({ notebookId, collection, notebook }: NotebookEdi
     const fiber = Effect.runFork(fetchBinding);
 
     // Handle the result when the fiber completes
-    Fiber.join(fiber).pipe(
-      Effect.tap((result) => Effect.sync(() => setBinding(result))),
-      Effect.catchAll((err) => Effect.sync(() => setError(err))),
-      Effect.runPromise
-    );
+    Fiber.join(fiber)
+      .pipe(
+        Effect.tap((result) => Effect.sync(() => setBinding(result))),
+        Effect.catchAll((err) => Effect.sync(() => setError(err))),
+        Effect.runPromise
+      )
+      .catch(() => {
+        // Silently ignore interruption - expected when switching notebooks
+      });
 
     // Cleanup: interrupt the fiber when notebookId changes or component unmounts
     return () => {
