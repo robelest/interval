@@ -17,6 +17,7 @@ import { ReloadPrompt } from '../components/ReloadPrompt';
 import { Sidebar } from '../components/Sidebar';
 import { SearchPanel } from '../components/SearchPanel';
 import { NotebooksProvider } from '../contexts/NotebooksContext';
+import { useCreateNotebook } from '../hooks/useCreateNotebook';
 
 import appCss from '../styles.css?url';
 
@@ -119,19 +120,6 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 function AppLayout() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
-  // Keyboard shortcut for search (Cmd+K or Ctrl+K)
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
-        setIsSearchOpen(true);
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
   // Server-render the full layout structure
   // NotebooksProvider is in RootDocument, wrapping this on client
   return (
@@ -141,8 +129,44 @@ function AppLayout() {
         <Outlet />
       </main>
       <ClientOnly fallback={null}>
+        <KeyboardShortcuts onSearchOpen={() => setIsSearchOpen(true)} />
         <SearchPanel isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
       </ClientOnly>
     </div>
   );
+}
+
+/**
+ * Client-only keyboard shortcuts component.
+ * Must be inside NotebooksProvider (via ClientOnly in RootDocument).
+ */
+function KeyboardShortcuts({ onSearchOpen }: { onSearchOpen: () => void }) {
+  const createNotebook = useCreateNotebook();
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger shortcuts when typing in inputs/textareas
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+        return;
+      }
+
+      // Cmd+K or Ctrl+K: Open search
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        onSearchOpen();
+      }
+
+      // Option+N (Alt+N): Create new notebook
+      if (e.altKey && e.key === 'n') {
+        e.preventDefault();
+        createNotebook();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onSearchOpen, createNotebook]);
+
+  return null;
 }
