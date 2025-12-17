@@ -6,7 +6,7 @@ import type { Notebook } from '../src/types/notebook';
 
 const r = replicate(components.replicate);
 
-export const { stream, material, insert, update, remove } = r<Notebook>({
+export const { stream, material, insert, update, remove, recovery } = r<Notebook>({
   collection: 'notebooks',
 });
 

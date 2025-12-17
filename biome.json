@@ -64,12 +64,34 @@
   },
   "overrides": [
     {
-      "includes": ["convex/_generated/**", "**/*.d.ts", "**/routeTree.gen.ts"],
+      "includes": [
+        "convex/_generated/**",
+        "**/*.d.ts",
+        "**/routeTree.gen.ts",
+        "dev-dist/**",
+        "dist/**"
+      ],
       "linter": {
         "enabled": false
       },
       "formatter": {
         "enabled": false
+      }
+    },
+    {
+      "includes": ["src/components/ui/**"],
+      "linter": {
+        "rules": {
+          "a11y": {
+            "useSemanticElements": "off",
+            "noLabelWithoutControl": "off",
+            "useKeyWithClickEvents": "off"
+          },
+          "suspicious": {
+            "noArrayIndexKey": "off",
+            "noDoubleEquals": "off"
+          }
+        }
       }
     },
     {

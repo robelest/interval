@@ -1,8 +1,13 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { Search, FileText, X } from 'lucide-react';
+import { Search, FileText } from 'lucide-react';
 import { extract } from '@trestleinc/replicate/client';
 import { useNotebooksContext } from '../contexts/NotebooksContext';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
 import type { Notebook } from '../collections/useNotebooks';
 
 interface SearchPanelProps {
@@ -19,10 +24,9 @@ export function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
-  // Use context instead of direct useLiveQuery - single subscription at root
   const { notebooks } = useNotebooksContext();
 
-  // Debounce search query to avoid expensive fragmentToText calls on every keystroke
+  // Debounce search query
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedQuery(query);
@@ -30,7 +34,7 @@ export function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
     return () => clearTimeout(timer);
   }, [query]);
 
-  // Memoize text extraction per notebook to avoid repeated parsing
+  // Memoize text extraction per notebook
   const notebooksWithText = useMemo(
     () =>
       (notebooks as Notebook[]).map((n) => ({
@@ -40,7 +44,7 @@ export function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
     [notebooks]
   );
 
-  // Filter locally - search both title and content (uses debounced query)
+  // Filter locally
   const results = useMemo(() => {
     if (!debouncedQuery.trim()) return [];
     const q = debouncedQuery.toLowerCase();
@@ -49,17 +53,18 @@ export function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
       .slice(0, 20);
   }, [notebooksWithText, debouncedQuery]);
 
-  // Focus input and reset state when opened
+  // Reset state when opened
   useEffect(() => {
-    if (isOpen && inputRef.current) {
-      inputRef.current.focus();
+    if (isOpen) {
       setQuery('');
       setDebouncedQuery('');
       setSelectedIndex(0);
+      // Focus input after dialog animation
+      setTimeout(() => inputRef.current?.focus(), 50);
     }
   }, [isOpen]);
 
-  // Reset selection when results change - ensure index is valid
+  // Reset selection when results change
   useEffect(() => {
     if (results.length > 0 && selectedIndex >= results.length) {
       setSelectedIndex(0);
@@ -83,10 +88,6 @@ export function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
           handleSelect(results[selectedIndex].id);
         }
         break;
-      case 'Escape':
-        e.preventDefault();
-        onClose();
-        break;
     }
   };
 
@@ -95,75 +96,82 @@ export function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
     onClose();
   };
 
-  // Close on backdrop click
-  const handleBackdropClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
-  };
-
-  if (!isOpen) return null;
-
   return (
-    <dialog
-      className="search-backdrop"
-      open
-      onClick={handleBackdropClick}
-      onKeyDown={(e) => e.key === 'Escape' && onClose()}
-    >
-      <div className="search-panel">
-        <div className="search-input-wrapper">
-          <Search className="search-icon" />
-          <input
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-[520px] p-0 gap-0" showCloseButton={false}>
+        <DialogHeader className="sr-only">
+          <DialogTitle>Search notebooks</DialogTitle>
+        </DialogHeader>
+
+        {/* Search Input */}
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-border">
+          <Search className="w-4 h-4 text-muted-foreground shrink-0" />
+          <Input
             ref={inputRef}
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Search notebooks..."
-            className="search-input"
+            className="border-0 p-0 h-auto text-sm focus-visible:ring-0 focus-visible:ring-offset-0"
           />
-          <button type="button" onClick={onClose} className="search-close">
-            <X className="w-4 h-4" />
-          </button>
         </div>
 
-        <div className="search-results">
+        {/* Results */}
+        <ScrollArea className="max-h-[300px]">
           {query.trim() === '' ? (
-            <div className="search-empty">
+            <div className="py-8 text-center text-muted-foreground text-sm">
               <p>Type to search your notebooks</p>
-              <kbd>↑↓</kbd> to navigate <kbd>↵</kbd> to select <kbd>esc</kbd> to close
+              <p className="mt-2 text-xs">
+                <kbd className="px-1.5 py-0.5 mx-0.5 font-mono text-[0.6875rem] bg-background border border-border rounded-sm">
+                  ↑↓
+                </kbd>{' '}
+                navigate{' '}
+                <kbd className="px-1.5 py-0.5 mx-0.5 font-mono text-[0.6875rem] bg-background border border-border rounded-sm">
+                  ↵
+                </kbd>{' '}
+                select{' '}
+                <kbd className="px-1.5 py-0.5 mx-0.5 font-mono text-[0.6875rem] bg-background border border-border rounded-sm">
+                  esc
+                </kbd>{' '}
+                close
+              </p>
             </div>
           ) : results.length === 0 ? (
-            <div className="search-no-results">
+            <div className="py-8 text-center text-muted-foreground text-sm">
               <p>No notebooks found for "{query}"</p>
             </div>
           ) : (
-            <ul className="search-list">
+            <div className="p-1">
               {results.map((notebook, index) => (
-                <li key={notebook.id}>
-                  <button
-                    type="button"
-                    onClick={() => handleSelect(notebook.id)}
-                    className={`search-item ${index === selectedIndex ? 'search-item-selected' : ''}`}
-                  >
-                    <FileText className="w-4 h-4 shrink-0" />
-                    <div className="search-item-content">
-                      <span className="search-item-title">{notebook.title || 'Untitled'}</span>
-                      {notebook.textContent && (
-                        <span className="search-item-preview">
-                          {truncate(notebook.textContent, 80)}
-                        </span>
-                      )}
-                    </div>
-                  </button>
-                </li>
+                <Button
+                  key={notebook.id}
+                  variant="ghost"
+                  className={cn(
+                    'w-full justify-start gap-3 h-auto py-2.5 px-3 text-left',
+                    index === selectedIndex && 'bg-accent text-accent-foreground'
+                  )}
+                  onClick={() => handleSelect(notebook.id)}
+                  onMouseEnter={() => setSelectedIndex(index)}
+                >
+                  <FileText className="w-4 h-4 shrink-0 text-muted-foreground" />
+                  <div className="flex-1 min-w-0">
+                    <span className="block text-sm font-medium truncate">
+                      {notebook.title || 'Untitled'}
+                    </span>
+                    {notebook.textContent && (
+                      <span className="block text-xs text-muted-foreground truncate">
+                        {truncate(notebook.textContent, 80)}
+                      </span>
+                    )}
+                  </div>
+                </Button>
               ))}
-            </ul>
+            </div>
           )}
-        </div>
-      </div>
-    </dialog>
+        </ScrollArea>
+      </DialogContent>
+    </Dialog>
   );
 }
 

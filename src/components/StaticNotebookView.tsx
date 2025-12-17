@@ -9,6 +9,7 @@ interface StaticNotebookViewProps {
 /**
  * Server-side rendered view of a notebook.
  * Provides instant content display before BlockNote hydrates.
+ * No overlay - shows content immediately for best perceived performance.
  */
 export function StaticNotebookView({ notebook }: StaticNotebookViewProps) {
   return (
@@ -19,13 +20,6 @@ export function StaticNotebookView({ notebook }: StaticNotebookViewProps) {
       </div>
 
       <div className="editor-content">
-        <div className="static-content-overlay">
-          <div className="static-loading-indicator">
-            <div className="loading-dot" />
-            <div className="loading-dot" />
-            <div className="loading-dot" />
-          </div>
-        </div>
         <ContentRenderer content={notebook.content} />
       </div>
     </div>

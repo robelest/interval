@@ -11,14 +11,12 @@ import {
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools';
 import { configure, getConsoleSink, type LogRecord } from '@logtape/logtape';
 import { ConvexProvider, ConvexReactClient } from 'convex/react';
-import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from '@tanstack/react-router';
-import { useHotkeys } from 'react-hotkeys-hook';
+import { useState, useEffect } from 'react';
 import { ConvexRxErrorBoundary } from '../components/ErrorBoundary';
+import { ReloadPrompt } from '../components/ReloadPrompt';
 import { Sidebar } from '../components/Sidebar';
 import { SearchPanel } from '../components/SearchPanel';
-import { NotebooksProvider, useNotebooksContext } from '../contexts/NotebooksContext';
-import type { Notebook } from '../collections/useNotebooks';
+import { NotebooksProvider } from '../contexts/NotebooksContext';
 
 import appCss from '../styles.css?url';
 
@@ -74,13 +72,6 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     links: [
       { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
       { rel: 'stylesheet', href: appCss },
-      // Load distinctive fonts
-      { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
-      { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossOrigin: 'anonymous' },
-      {
-        rel: 'stylesheet',
-        href: 'https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Instrument+Sans:ital,wght@0,400..700;1,400..700&display=swap',
-      },
     ],
   }),
 
@@ -96,16 +87,29 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body>
         <ConvexRxErrorBoundary>
-          {convexReactClient ? (
-            <ConvexProvider client={convexReactClient}>{children}</ConvexProvider>
-          ) : (
-            children
-          )}
+          <ClientOnly
+            fallback={
+              convexReactClient ? (
+                <ConvexProvider client={convexReactClient}>{children}</ConvexProvider>
+              ) : (
+                children
+              )
+            }
+          >
+            {convexReactClient ? (
+              <ConvexProvider client={convexReactClient}>
+                <NotebooksProvider>{children}</NotebooksProvider>
+              </ConvexProvider>
+            ) : (
+              children
+            )}
+          </ClientOnly>
           <TanStackDevtools
             config={{ position: 'bottom-right' }}
             plugins={[{ name: 'Tanstack Router', render: <TanStackRouterDevtoolsPanel /> }]}
           />
         </ConvexRxErrorBoundary>
+        <ReloadPrompt />
         <Scripts />
       </body>
     </html>
@@ -128,87 +132,17 @@ function AppLayout() {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  return (
-    <ClientOnly
-      fallback={
-        <div className="app-layout">
-          <aside className="sidebar sidebar-loading-state">
-            <div className="sidebar-header">
-              <h1 className="sidebar-title">Notebook</h1>
-            </div>
-          </aside>
-          <main className="main-content">
-            <Outlet />
-          </main>
-        </div>
-      }
-    >
-      <LiveAppLayout
-        isSearchOpen={isSearchOpen}
-        onSearchOpen={() => setIsSearchOpen(true)}
-        onSearchClose={() => setIsSearchOpen(false)}
-      />
-    </ClientOnly>
-  );
-}
-
-interface LiveAppLayoutProps {
-  isSearchOpen: boolean;
-  onSearchOpen: () => void;
-  onSearchClose: () => void;
-}
-
-function LiveAppLayout({ isSearchOpen, onSearchOpen, onSearchClose }: LiveAppLayoutProps) {
-  return (
-    <NotebooksProvider>
-      <AppContent
-        isSearchOpen={isSearchOpen}
-        onSearchOpen={onSearchOpen}
-        onSearchClose={onSearchClose}
-      />
-    </NotebooksProvider>
-  );
-}
-
-function AppContent({ isSearchOpen, onSearchOpen, onSearchClose }: LiveAppLayoutProps) {
-  const { collection } = useNotebooksContext();
-  const navigate = useNavigate();
-
-  const createNewNotebook = useCallback(async () => {
-    const id = crypto.randomUUID();
-    const now = Date.now();
-
-    await collection.insert({
-      id,
-      title: 'Untitled',
-      content: {
-        type: 'doc',
-        content: [{ type: 'paragraph' }],
-      },
-      createdAt: now,
-      updatedAt: now,
-    } as Notebook);
-
-    navigate({ to: '/notebooks/$notebookId', params: { notebookId: id } });
-  }, [collection, navigate]);
-
-  // Global Alt+N to create new notebook
-  useHotkeys(
-    'alt+n',
-    () => {
-      createNewNotebook();
-    },
-    { preventDefault: true },
-    [createNewNotebook]
-  );
-
+  // Server-render the full layout structure
+  // NotebooksProvider is in RootDocument, wrapping this on client
   return (
     <div className="app-layout">
-      <Sidebar onSearchOpen={onSearchOpen} />
+      <Sidebar onSearchOpen={() => setIsSearchOpen(true)} />
       <main className="main-content">
         <Outlet />
       </main>
-      <SearchPanel isOpen={isSearchOpen} onClose={onSearchClose} />
+      <ClientOnly fallback={null}>
+        <SearchPanel isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+      </ClientOnly>
     </div>
   );
 }
