@@ -3,6 +3,7 @@ import '@blocknote/shadcn/style.css';
 
 import { BlockNoteView } from '@blocknote/shadcn';
 import { useCreateBlockNote } from '@blocknote/react';
+import { Effect, Fiber } from 'effect';
 import { useEffect, useState, useRef } from 'react';
 import type { EditorBinding } from '@trestleinc/replicate/client';
 
@@ -24,23 +25,31 @@ export function NotebookEditor({ notebookId, collection, notebook }: NotebookEdi
   const [binding, setBinding] = useState<EditorBinding | null>(null);
   const [error, setError] = useState<Error | null>(null);
 
-  // Get editor binding - waits for Y.Doc to be ready
+  // Get editor binding using Effect-TS for proper cancellation
   useEffect(() => {
-    let cancelled = false;
+    // Reset state immediately on notebook change
+    setBinding(null);
+    setError(null);
 
-    collection.utils
-      .prose(notebookId, 'content')
-      .then((result) => {
-        if (!cancelled) setBinding(result);
-      })
-      .catch((err) => {
-        if (!cancelled) setError(err);
-      });
+    // Create an interruptible effect for fetching the binding
+    const fetchBinding = Effect.tryPromise({
+      try: () => collection.utils.prose(notebookId, 'content'),
+      catch: (e) => e as Error,
+    });
 
+    // Fork the effect to get a fiber we can interrupt
+    const fiber = Effect.runFork(fetchBinding);
+
+    // Handle the result when the fiber completes
+    Fiber.join(fiber).pipe(
+      Effect.tap((result) => Effect.sync(() => setBinding(result))),
+      Effect.catchAll((err) => Effect.sync(() => setError(err))),
+      Effect.runPromise
+    );
+
+    // Cleanup: interrupt the fiber when notebookId changes or component unmounts
     return () => {
-      cancelled = true;
-      setBinding(null);
-      setError(null);
+      Effect.runFork(Fiber.interrupt(fiber));
     };
   }, [collection, notebookId]);
 
@@ -93,12 +102,19 @@ function NotebookEditorView({
   const [title, setTitle] = useState(notebook.title);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [pending, setPending] = useState(binding.pending);
+  const [, setTick] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Subscribe to pending state changes
   useEffect(() => {
     return binding.onPendingChange(setPending);
   }, [binding]);
+
+  // Auto-refresh timestamp display every 60 seconds
+  useEffect(() => {
+    const interval = setInterval(() => setTick((t) => t + 1), 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Create editor ONCE with empty deps - never recreate
   const editor = useCreateBlockNote(
