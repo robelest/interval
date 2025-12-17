@@ -1,7 +1,8 @@
 import { Link, useNavigate, useParams, ClientOnly } from '@tanstack/react-router';
 import { Plus, Search, FileText, Trash2 } from 'lucide-react';
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNotebooksContext } from '../contexts/NotebooksContext';
+import { useCreateNotebook } from '../hooks/useCreateNotebook';
 import { StarIcon } from './StarIcon';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -61,30 +62,10 @@ function NewPageButtonFallback() {
 }
 
 function NewPageButton() {
-  const { collection } = useNotebooksContext();
-  const navigate = useNavigate();
-
-  const handleCreateNew = useCallback(async () => {
-    const id = crypto.randomUUID();
-    const now = Date.now();
-
-    collection.insert({
-      id,
-      title: 'Untitled',
-      content: {
-        type: 'doc',
-        content: [{ type: 'paragraph' }],
-      },
-      createdAt: now,
-      updatedAt: now,
-    } as Notebook);
-
-    await new Promise((r) => setTimeout(r, 100));
-    navigate({ to: '/notebooks/$notebookId', params: { notebookId: id } });
-  }, [collection, navigate]);
+  const createNotebook = useCreateNotebook();
 
   return (
-    <Button variant="outline" className="w-full justify-start gap-2" onClick={handleCreateNew}>
+    <Button variant="outline" className="w-full justify-start gap-2" onClick={createNotebook}>
       <Plus className="w-4 h-4" />
       <span>New Page</span>
     </Button>
@@ -197,8 +178,8 @@ function SidebarNotebooksList() {
               className={cn(
                 'group flex items-center gap-2 px-3 py-2 text-sm no-underline transition-colors',
                 activeId === notebook.id
-                  ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                  ? 'bg-muted text-foreground border-l-2 border-sidebar-accent'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground border-l-2 border-transparent'
               )}
             >
               <FileText className="w-4 h-4 shrink-0" />
@@ -217,12 +198,7 @@ function SidebarNotebooksList() {
                 variant="ghost"
                 size="icon-xs"
                 onClick={(e) => handleDelete(e, notebook.id)}
-                className={cn(
-                  'opacity-0 group-hover:opacity-60 hover:!opacity-100',
-                  activeId === notebook.id
-                    ? 'hover:text-sidebar-accent-foreground'
-                    : 'hover:text-destructive'
-                )}
+                className="text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-all"
                 aria-label="Delete notebook"
               >
                 <Trash2 className="w-3.5 h-3.5" />
