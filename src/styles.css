@@ -3,9 +3,6 @@
 @import "@fontsource-variable/nunito-sans";
 @import "@fontsource-variable/newsreader";
 
-/* Include shadcn styles */
-@source "../node_modules/@blocknote/shadcn";
-
 @custom-variant dark (&:is(.dark *));
 
 /* ============================================
@@ -208,38 +205,22 @@
   @apply flex-1 relative bg-transparent;
 }
 
+/* TipTap Editor */
+.tiptap-editor {
+  @apply outline-none min-h-[200px];
+}
+
+.tiptap-editor p.is-editor-empty:first-child::before {
+  @apply text-muted-foreground float-left h-0 pointer-events-none;
+  content: attr(data-placeholder);
+}
+
 .editor-loading {
   @apply flex flex-col items-center justify-center p-16 text-muted-foreground gap-4;
 }
 
 .editor-loading-spinner {
   @apply w-5 h-5 border-2 border-border border-t-primary rounded-full animate-spin;
-}
-
-/* ============================================
-   BlockNote Overrides - Seamless background like Notion
-   ============================================ */
-
-.bn-container {
-  --bn-colors-editor-background: transparent;
-  --bn-colors-menu-background: var(--popover);
-  --bn-colors-tooltip-background: var(--popover);
-  --bn-colors-hovered-background: var(--muted);
-  --bn-colors-selected-background: var(--accent);
-  --bn-colors-editor-text: var(--foreground);
-  @apply font-sans;
-}
-
-/* Make all editor layers transparent */
-.bn-editor,
-.bn-editor .ProseMirror,
-.bn-block-group {
-  /* biome-ignore lint/complexity/noImportantStyles: BlockNote requires !important to override its high-specificity styles */
-  background-color: transparent !important;
-}
-
-.bn-editor {
-  @apply p-0;
 }
 
 /* ============================================

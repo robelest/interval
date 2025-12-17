@@ -1,14 +1,12 @@
-import '@blocknote/core/fonts/inter.css';
-import '@blocknote/shadcn/style.css';
-
-import { BlockNoteView } from '@blocknote/shadcn';
-import { useCreateBlockNote } from '@blocknote/react';
+import { EditorContent, useEditor } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import Collaboration from '@tiptap/extension-collaboration';
+import Placeholder from '@tiptap/extension-placeholder';
 import { Effect, Fiber } from 'effect';
 import { useEffect, useState, useRef } from 'react';
 import type { EditorBinding } from '@trestleinc/replicate/client';
 
 import type { Notebook } from '../collections/useNotebooks';
-import { formatRelativeTime } from '../lib/date-utils';
 
 interface NotebookEditorProps {
   notebookId: string;
@@ -105,34 +103,29 @@ function NotebookEditorView({
 }: NotebookEditorViewProps) {
   const [title, setTitle] = useState(notebook.title);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [pending, setPending] = useState(binding.pending);
-  const [, setTick] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Subscribe to pending state changes
-  useEffect(() => {
-    return binding.onPendingChange(setPending);
-  }, [binding]);
-
-  // Auto-refresh timestamp display every 60 seconds
-  useEffect(() => {
-    const interval = setInterval(() => setTick((t) => t + 1), 60000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Create editor ONCE with empty deps - never recreate
-  const editor = useCreateBlockNote(
+  // Create TipTap editor with Yjs collaboration
+  const editor = useEditor(
     {
-      collaboration: {
-        provider: binding.provider,
-        fragment: binding.fragment,
-        user: {
-          name: 'User',
-          color: '#d7827e', // Rose Pine rose
+      extensions: [
+        StarterKit.configure({
+          undoRedo: false, // Yjs handles undo/redo
+        }),
+        Collaboration.configure({
+          fragment: binding.fragment,
+        }),
+        Placeholder.configure({
+          placeholder: 'Start writing...',
+        }),
+      ],
+      editorProps: {
+        attributes: {
+          class: 'tiptap-editor',
         },
       },
     },
-    []
+    [binding.fragment]
   );
 
   // Sync title from external changes (collaborative edits, other tabs)
@@ -191,13 +184,10 @@ function NotebookEditorView({
             </button>
           )}
         </div>
-        <p className="editor-meta">
-          {pending ? 'Saving...' : `Last edited ${formatRelativeTime(notebook.updatedAt)}`}
-        </p>
       </div>
 
       <div className="editor-content">
-        <BlockNoteView editor={editor} theme="light" data-theming-css-variables-demo />
+        <EditorContent editor={editor} />
       </div>
     </div>
   );
