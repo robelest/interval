@@ -6,32 +6,32 @@ import { Effect, Fiber } from 'effect';
 import { useEffect, useState, useRef } from 'react';
 import type { EditorBinding } from '@trestleinc/replicate/client';
 
-import type { Notebook } from '../collections/useNotebooks';
+import type { Issue } from '../types/issue';
 
-interface NotebookEditorProps {
-  notebookId: string;
+interface IssueEditorProps {
+  issueId: string;
   collection: {
     utils: {
-      prose(documentId: string, field: 'content'): Promise<EditorBinding>;
+      prose(documentId: string, field: 'description'): Promise<EditorBinding>;
     };
-    update(id: string, updater: (draft: Notebook) => void): void;
+    update(id: string, updater: (draft: Issue) => void): void;
   };
-  notebook: Notebook;
+  issue: Issue;
 }
 
-export function NotebookEditor({ notebookId, collection, notebook }: NotebookEditorProps) {
+export function IssueEditor({ issueId, collection, issue }: IssueEditorProps) {
   const [binding, setBinding] = useState<EditorBinding | null>(null);
   const [error, setError] = useState<Error | null>(null);
 
   // Get editor binding using Effect-TS for proper cancellation
   useEffect(() => {
-    // Reset state immediately on notebook change
+    // Reset state immediately on issue change
     setBinding(null);
     setError(null);
 
     // Create an interruptible effect for fetching the binding
     const fetchBinding = Effect.tryPromise({
-      try: () => collection.utils.prose(notebookId, 'content'),
+      try: () => collection.utils.prose(issueId, 'description'),
       catch: (e) => e as Error,
     });
 
@@ -46,14 +46,14 @@ export function NotebookEditor({ notebookId, collection, notebook }: NotebookEdi
         Effect.runPromise
       )
       .catch(() => {
-        // Silently ignore interruption - expected when switching notebooks
+        // Silently ignore interruption - expected when switching issues
       });
 
-    // Cleanup: interrupt the fiber when notebookId changes or component unmounts
+    // Cleanup: interrupt the fiber when issueId changes or component unmounts
     return () => {
       Effect.runFork(Fiber.interrupt(fiber));
     };
-  }, [collection, notebookId]);
+  }, [collection, issueId]);
 
   if (error) {
     return (
@@ -73,35 +73,30 @@ export function NotebookEditor({ notebookId, collection, notebook }: NotebookEdi
   }
 
   // Render editor only when binding is ready
-  // key={notebookId} forces complete remount when switching notebooks
+  // key={issueId} forces complete remount when switching issues
   return (
-    <NotebookEditorView
-      key={notebookId}
+    <IssueEditorView
+      key={issueId}
       binding={binding}
-      notebook={notebook}
+      issue={issue}
       collection={collection}
-      notebookId={notebookId}
+      issueId={issueId}
     />
   );
 }
 
 // Separate component to prevent editor recreation on parent re-renders
-interface NotebookEditorViewProps {
+interface IssueEditorViewProps {
   binding: EditorBinding;
-  notebook: Notebook;
+  issue: Issue;
   collection: {
-    update(id: string, updater: (draft: Notebook) => void): void;
+    update(id: string, updater: (draft: Issue) => void): void;
   };
-  notebookId: string;
+  issueId: string;
 }
 
-function NotebookEditorView({
-  binding,
-  notebook,
-  collection,
-  notebookId,
-}: NotebookEditorViewProps) {
-  const [title, setTitle] = useState(notebook.title);
+function IssueEditorView({ binding, issue, collection, issueId }: IssueEditorViewProps) {
+  const [title, setTitle] = useState(issue.title);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -116,12 +111,12 @@ function NotebookEditorView({
           fragment: binding.fragment,
         }),
         Placeholder.configure({
-          placeholder: 'Start writing...',
+          placeholder: 'Write your essay here...',
         }),
       ],
       editorProps: {
         attributes: {
-          class: 'tiptap-editor',
+          class: 'tiptap-editor issue-essay',
         },
       },
     },
@@ -131,9 +126,9 @@ function NotebookEditorView({
   // Sync title from external changes (collaborative edits, other tabs)
   useEffect(() => {
     if (!isEditingTitle) {
-      setTitle(notebook.title);
+      setTitle(issue.title);
     }
-  }, [notebook.title, isEditingTitle]);
+  }, [issue.title, isEditingTitle]);
 
   // Focus input when entering edit mode
   useEffect(() => {
@@ -149,8 +144,8 @@ function NotebookEditorView({
 
   const handleTitleBlur = () => {
     setIsEditingTitle(false);
-    if (title.trim() !== notebook.title) {
-      collection.update(notebookId, (draft: Notebook) => {
+    if (title.trim() !== issue.title) {
+      collection.update(issueId, (draft: Issue) => {
         draft.title = title.trim() || 'Untitled';
         draft.updatedAt = Date.now();
       });
@@ -165,28 +160,32 @@ function NotebookEditorView({
   };
 
   return (
-    <div className="editor-container">
-      <div className="editor-header">
-        <div className="editor-header-top">
-          {isEditingTitle ? (
-            <input
-              ref={inputRef}
-              type="text"
-              value={title}
-              onChange={(e) => handleTitleChange(e.target.value)}
-              onBlur={handleTitleBlur}
-              onKeyDown={handleTitleKeyDown}
-              className="editor-title-input"
-            />
-          ) : (
-            <button type="button" className="editor-title" onClick={() => setIsEditingTitle(true)}>
-              {title || 'Untitled'}
-            </button>
-          )}
-        </div>
+    <div className="max-w-[680px] mx-auto px-8 py-12 w-full">
+      {/* Header with title */}
+      <div className="mb-8 pb-6 border-b border-border">
+        {isEditingTitle ? (
+          <input
+            ref={inputRef}
+            type="text"
+            value={title}
+            onChange={(e) => handleTitleChange(e.target.value)}
+            onBlur={handleTitleBlur}
+            onKeyDown={handleTitleKeyDown}
+            className="w-full font-display text-3xl font-normal text-foreground bg-transparent border-none border-b-2 border-primary p-0 pb-1 leading-tight outline-none"
+          />
+        ) : (
+          <button
+            type="button"
+            className="w-full font-display text-3xl font-normal text-foreground leading-tight cursor-text transition-colors hover:text-primary text-left bg-transparent border-none p-0"
+            onClick={() => setIsEditingTitle(true)}
+          >
+            {title || 'Untitled'}
+          </button>
+        )}
       </div>
 
-      <div className="editor-content">
+      {/* Editor content */}
+      <div className="min-h-[200px]">
         <EditorContent editor={editor} />
       </div>
     </div>

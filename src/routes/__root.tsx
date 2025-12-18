@@ -16,8 +16,8 @@ import { ConvexRxErrorBoundary } from '../components/ErrorBoundary';
 import { ReloadPrompt } from '../components/ReloadPrompt';
 import { Sidebar } from '../components/Sidebar';
 import { SearchPanel } from '../components/SearchPanel';
-import { NotebooksProvider } from '../contexts/NotebooksContext';
-import { useCreateNotebook } from '../hooks/useCreateNotebook';
+import { IssuesProvider } from '../contexts/IssuesContext';
+import { useCreateIssue } from '../hooks/useCreateIssue';
 
 import appCss from '../styles.css?url';
 
@@ -68,7 +68,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     meta: [
       { charSet: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { title: 'Notebook' },
+      { title: 'Interval' },
     ],
     links: [
       { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
@@ -99,7 +99,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
           >
             {convexReactClient ? (
               <ConvexProvider client={convexReactClient}>
-                <NotebooksProvider>{children}</NotebooksProvider>
+                <IssuesProvider>{children}</IssuesProvider>
               </ConvexProvider>
             ) : (
               children
@@ -121,7 +121,7 @@ function AppLayout() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   // Server-render the full layout structure
-  // NotebooksProvider is in RootDocument, wrapping this on client
+  // IssuesProvider is in RootDocument, wrapping this on client
   return (
     <div className="app-layout">
       <Sidebar onSearchOpen={() => setIsSearchOpen(true)} />
@@ -138,10 +138,10 @@ function AppLayout() {
 
 /**
  * Client-only keyboard shortcuts component.
- * Must be inside NotebooksProvider (via ClientOnly in RootDocument).
+ * Must be inside IssuesProvider (via ClientOnly in RootDocument).
  */
 function KeyboardShortcuts({ onSearchOpen }: { onSearchOpen: () => void }) {
-  const createNotebook = useCreateNotebook();
+  const createIssue = useCreateIssue();
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -157,17 +157,17 @@ function KeyboardShortcuts({ onSearchOpen }: { onSearchOpen: () => void }) {
         onSearchOpen();
       }
 
-      // Option+N (Alt+N): Create new notebook
+      // Option+N (Alt+N): Create new issue
       // Use e.code for Mac compatibility (Option key produces special chars like ñ)
       if (e.altKey && e.code === 'KeyN') {
         e.preventDefault();
-        createNotebook();
+        createIssue();
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [onSearchOpen, createNotebook]);
+  }, [onSearchOpen, createIssue]);
 
   return null;
 }
