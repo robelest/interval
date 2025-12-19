@@ -24,13 +24,16 @@ const config = defineConfig({
       },
       enableBuild: true,
     }),
+    // VitePWA only generates manifest.webmanifest
+    // Service worker is generated post-build via scripts/generate-sw.ts
     VitePWA({
       registerType: 'prompt',
+      injectRegister: false, // We use useRegisterSW manually in ReloadPrompt.tsx
       includeAssets: ['favicon.ico', 'favicon.svg', 'robots.txt'],
       manifest: {
-        name: 'Notebook',
-        short_name: 'Notebook',
-        description: 'Offline-first notebook with real-time sync',
+        name: 'Interval',
+        short_name: 'Interval',
+        description: 'Offline-first task tracker with real-time sync',
         theme_color: '#000000',
         background_color: '#ffffff',
         display: 'standalone',
@@ -49,12 +52,9 @@ const config = defineConfig({
         ],
       },
       devOptions: {
-        enabled: true,
+        enabled: false,
         type: 'module',
-      },
-      workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        navigateFallback: null,
+        suppressWarnings: true,
       },
     }),
   ],
