@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
   <!-- 8-pointed star: two hollow frame wireframes -->
-  <g stroke="#7aa2f7" stroke-width="1.5" fill="none">
+  <g stroke="#1a1a1a" stroke-width="1.5" fill="none">
     <!-- Frame 1: Standard orientation -->
     <rect x="5" y="5" width="22" height="22"/>
     <rect x="8" y="8" width="16" height="16"/>

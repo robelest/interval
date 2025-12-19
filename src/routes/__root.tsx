@@ -101,9 +101,21 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       { charSet: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
       { title: 'Interval' },
+      { name: 'description', content: 'Offline-first interval tracker with real-time sync' },
+      // Open Graph
+      { property: 'og:title', content: 'Interval' },
+      { property: 'og:description', content: 'Offline-first interval tracker with real-time sync' },
+      { property: 'og:image', content: '/logo512.png' },
+      { property: 'og:type', content: 'website' },
+      // Twitter
+      { name: 'twitter:card', content: 'summary' },
+      { name: 'twitter:title', content: 'Interval' },
+      { name: 'twitter:description', content: 'Offline-first interval tracker with real-time sync' },
+      { name: 'twitter:image', content: '/logo512.png' },
     ],
     links: [
       { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
+      { rel: 'apple-touch-icon', href: '/logo192.png' },
       { rel: 'stylesheet', href: appCss },
     ],
   }),
