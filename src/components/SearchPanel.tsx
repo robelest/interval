@@ -155,19 +155,22 @@ export function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
         <ScrollArea className="flex-1 sm:max-h-[400px]">
           <div className="p-1">
             {/* New Interval action */}
-            <Button
-              variant="ghost"
+            <div
+              role="option"
+              tabIndex={0}
               className={cn(
-                'w-full justify-start gap-3 h-auto py-2.5 px-3 text-left',
-                selectedIndex === -1 && 'bg-accent text-accent-foreground'
+                'w-full flex items-center gap-3 py-2.5 px-3 text-left cursor-pointer',
+                'transition-colors hover:bg-muted hover:text-foreground border-l-2 border-transparent',
+                selectedIndex === -1 && 'bg-muted text-foreground border-l-2 border-sidebar-accent'
               )}
               onClick={handleCreateInterval}
               onMouseEnter={() => setSelectedIndex(-1)}
+              onKeyDown={(e) => e.key === 'Enter' && handleCreateInterval()}
             >
               <Plus className="w-4 h-4 shrink-0 text-primary" />
               <span className="text-sm font-medium">New Interval</span>
               <span className="ml-auto text-xs text-muted-foreground">⌥N</span>
-            </Button>
+            </div>
 
             {/* Divider */}
             {results.length > 0 && <div className="h-px bg-border my-1" />}
@@ -185,8 +188,9 @@ export function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
                   tabIndex={0}
                   className={cn(
                     'w-full flex items-center gap-3 py-2.5 px-3 text-left group cursor-pointer',
-                    'rounded-sm transition-colors hover:bg-accent hover:text-accent-foreground',
-                    index === selectedIndex && 'bg-accent text-accent-foreground'
+                    'transition-colors hover:bg-muted hover:text-foreground border-l-2 border-transparent',
+                    index === selectedIndex &&
+                      'bg-muted text-foreground border-l-2 border-sidebar-accent'
                   )}
                   onClick={() => handleSelect(interval.id)}
                   onMouseEnter={() => setSelectedIndex(index)}
