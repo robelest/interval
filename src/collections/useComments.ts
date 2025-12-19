@@ -1,9 +1,15 @@
 import { createCollection, type Collection } from '@tanstack/react-db';
-import { convexCollectionOptions, type EditorBinding } from '@trestleinc/replicate/client';
+import {
+  convexCollectionOptions,
+  persistence,
+  type EditorBinding,
+  type Persistence,
+} from '@trestleinc/replicate/client';
 import { api } from '../../convex/_generated/api';
 import { convexClient } from '../router';
-import { getSharedPersistence } from '@/lib/persistence';
 import type { Comment } from '../types/interval';
+// @ts-expect-error sql.js has no types
+import initSqlJs from 'sql.js';
 
 // Collection with utils.prose() for editor bindings
 type CommentsCollection = Collection<Comment> & {
@@ -14,15 +20,30 @@ type CommentsCollection = Collection<Comment> & {
 };
 
 let commentsCollection: CommentsCollection | null = null;
+let commentsPersistence: Persistence | null = null;
+
+/**
+ * Initialize comments persistence (call before useComments).
+ */
+export async function initCommentsPersistence(): Promise<Persistence> {
+  if (commentsPersistence) return commentsPersistence;
+
+  const SQL = await initSqlJs({
+    locateFile: (file: string) => `https://sql.js.org/dist/${file}`,
+  });
+  commentsPersistence = await persistence.sqlite.browser(SQL, 'comments');
+  return commentsPersistence;
+}
 
 /**
  * Get the comments collection singleton.
- * The collection is created once and reused across all components.
+ * Must call initCommentsPersistence() first.
  */
 export function useComments(): CommentsCollection {
+  if (!commentsPersistence) {
+    throw new Error('Call initCommentsPersistence() before useComments()');
+  }
   if (!commentsCollection) {
-    // Cast through unknown due to TanStack DB's complex generic type inference
-    // The type is correct at runtime, but TypeScript can't verify the deep sync callback types
     commentsCollection = createCollection(
       convexCollectionOptions<Comment>({
         convexClient,
@@ -30,7 +51,7 @@ export function useComments(): CommentsCollection {
         collection: 'comments',
         getKey: (comment: Comment) => comment.id,
         prose: ['body'],
-        persistence: getSharedPersistence(),
+        persistence: commentsPersistence,
       })
     ) as unknown as CommentsCollection;
   }

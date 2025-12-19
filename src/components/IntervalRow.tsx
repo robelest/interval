@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router';
-import { extract } from '@trestleinc/replicate/client';
+import { prose } from '@trestleinc/replicate/client';
 import { StatusIcon } from './StatusIcon';
 import { PriorityIcon } from './PriorityIcon';
 import type { Interval } from '../types/interval';
@@ -9,7 +9,7 @@ interface IntervalRowProps {
 }
 
 export function IntervalRow({ interval }: IntervalRowProps) {
-  const description = extract(interval.description);
+  const description = prose.extract(interval.description);
   const preview = description.slice(0, 100) + (description.length > 100 ? '...' : '');
 
   return (

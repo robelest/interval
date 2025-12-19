@@ -1,9 +1,15 @@
 import { createCollection, type Collection } from '@tanstack/react-db';
-import { convexCollectionOptions, type EditorBinding } from '@trestleinc/replicate/client';
+import {
+  convexCollectionOptions,
+  persistence,
+  type EditorBinding,
+  type Persistence,
+} from '@trestleinc/replicate/client';
 import { api } from '../../convex/_generated/api';
 import { convexClient } from '../router';
-import { getSharedPersistence } from '@/lib/persistence';
 import type { Interval } from '../types/interval';
+// @ts-expect-error sql.js has no types
+import initSqlJs from 'sql.js';
 
 // Collection with utils.prose() for editor bindings
 type IntervalsCollection = Collection<Interval> & {
@@ -14,15 +20,30 @@ type IntervalsCollection = Collection<Interval> & {
 };
 
 let intervalsCollection: IntervalsCollection | null = null;
+let intervalsPersistence: Persistence | null = null;
+
+/**
+ * Initialize intervals persistence (call before useIntervals).
+ */
+export async function initIntervalsPersistence(): Promise<Persistence> {
+  if (intervalsPersistence) return intervalsPersistence;
+
+  const SQL = await initSqlJs({
+    locateFile: (file: string) => `https://sql.js.org/dist/${file}`,
+  });
+  intervalsPersistence = await persistence.sqlite.browser(SQL, 'intervals');
+  return intervalsPersistence;
+}
 
 /**
  * Get the intervals collection singleton.
- * The collection is created once and reused across all components.
+ * Must call initIntervalsPersistence() first.
  */
 export function useIntervals(): IntervalsCollection {
+  if (!intervalsPersistence) {
+    throw new Error('Call initIntervalsPersistence() before useIntervals()');
+  }
   if (!intervalsCollection) {
-    // Cast through unknown due to TanStack DB's complex generic type inference
-    // The type is correct at runtime, but TypeScript can't verify the deep sync callback types
     intervalsCollection = createCollection(
       convexCollectionOptions<Interval>({
         convexClient,
@@ -30,7 +51,7 @@ export function useIntervals(): IntervalsCollection {
         collection: 'intervals',
         getKey: (interval: Interval) => interval.id,
         prose: ['description'],
-        persistence: getSharedPersistence(),
+        persistence: intervalsPersistence,
       })
     ) as unknown as IntervalsCollection;
   }

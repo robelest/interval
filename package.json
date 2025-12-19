@@ -10,7 +10,8 @@
     "build": "vite build && bun run generate-sw",
     "generate-sw": "bun scripts/generate-sw.ts",
     "serve": "vite preview",
-    "clean": "rm -rf dist dev-dist"
+    "clean": "rm -rf dist dev-dist",
+    "start": "bun .output/server/index.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.0.0",
@@ -42,6 +43,7 @@
     "react-dom": "^19.2.3",
     "react-hotkeys-hook": "^5.2.1",
     "shadcn": "^3.6.1",
+    "sql.js": "^1.13.0",
     "tailwind-merge": "^3.4.0",
     "tailwindcss": "^4.1.18",
     "vite-plugin-pwa": "^1.2.0",

@@ -1,6 +1,7 @@
-import { createContext, useContext, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import { useLiveQuery } from '@tanstack/react-db';
-import { useIntervals, type Interval } from '../collections/useIntervals';
+import { useIntervals, initIntervalsPersistence, type Interval } from '../collections/useIntervals';
+import { initCommentsPersistence } from '../collections/useComments';
 
 interface IntervalsContextValue {
   collection: ReturnType<typeof useIntervals>;
@@ -10,7 +11,35 @@ interface IntervalsContextValue {
 
 const IntervalsContext = createContext<IntervalsContextValue | null>(null);
 
-export function IntervalsProvider({ children }: { children: ReactNode }) {
+let persistenceInitialized = false;
+
+/**
+ * Wrapper that initializes SQLite persistence for all collections before rendering.
+ */
+function PersistenceGate({ children }: { children: ReactNode }) {
+  const [ready, setReady] = useState(persistenceInitialized);
+
+  useEffect(() => {
+    if (!ready) {
+      Promise.all([initIntervalsPersistence(), initCommentsPersistence()]).then(() => {
+        persistenceInitialized = true;
+        setReady(true);
+      });
+    }
+  }, [ready]);
+
+  if (!ready) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
+
+  return <>{children}</>;
+}
+
+function IntervalsProviderInner({ children }: { children: ReactNode }) {
   const collection = useIntervals();
   const { data: intervals = [], isLoading } = useLiveQuery(collection);
 
@@ -24,6 +53,14 @@ export function IntervalsProvider({ children }: { children: ReactNode }) {
     >
       {children}
     </IntervalsContext.Provider>
+  );
+}
+
+export function IntervalsProvider({ children }: { children: ReactNode }) {
+  return (
+    <PersistenceGate>
+      <IntervalsProviderInner>{children}</IntervalsProviderInner>
+    </PersistenceGate>
   );
 }
 

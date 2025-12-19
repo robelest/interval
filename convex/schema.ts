@@ -1,13 +1,13 @@
 import { defineSchema, type TableDefinition } from 'convex/server';
 import { v } from 'convex/values';
-import { table, prose } from '@trestleinc/replicate/server';
+import { schema } from '@trestleinc/replicate/server';
 
 export default defineSchema({
-  intervals: table(
+  intervals: schema.table(
     {
       id: v.string(),
       title: v.string(),
-      description: prose(),
+      description: schema.prose(),
       status: v.string(), // backlog | todo | in_progress | done | canceled
       priority: v.string(), // none | low | medium | high | urgent
       createdAt: v.number(),
@@ -22,11 +22,11 @@ export default defineSchema({
         .index('by_updated', ['updatedAt'])
   ),
 
-  comments: table(
+  comments: schema.table(
     {
       id: v.string(),
       intervalId: v.string(),
-      body: prose(),
+      body: schema.prose(),
       createdAt: v.number(),
       updatedAt: v.number(),
     },

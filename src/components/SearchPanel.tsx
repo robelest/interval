@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { Search, Plus, Trash2 } from 'lucide-react';
-import { extract } from '@trestleinc/replicate/client';
+import { prose } from '@trestleinc/replicate/client';
 import { useIntervalsContext } from '../contexts/IntervalsContext';
 import { useCreateInterval } from '../hooks/useCreateInterval';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -42,7 +42,7 @@ export function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
     () =>
       (intervals as Interval[]).map((i) => ({
         ...i,
-        textContent: extract(i.description).toLowerCase(),
+        textContent: prose.extract(i.description).toLowerCase(),
       })),
     [intervals]
   );
