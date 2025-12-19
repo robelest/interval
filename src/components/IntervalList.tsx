@@ -1,19 +1,12 @@
-import { useState, useMemo } from 'react';
-import { Plus } from 'lucide-react';
+import { useMemo } from 'react';
 import { useIntervalsContext } from '../contexts/IntervalsContext';
-import { useCreateInterval } from '../hooks/useCreateInterval';
+import { useFilterContext } from '../routes/__root';
 import { IntervalRow } from './IntervalRow';
-import { TopFilter } from './TopFilter';
-import { Button } from './ui/button';
 import { Skeleton } from './ui/skeleton';
-import type { StatusValue, PriorityValue } from '../types/interval';
 
 export function IntervalList() {
   const { intervals, isLoading } = useIntervalsContext();
-  const createInterval = useCreateInterval();
-
-  const [statusFilter, setStatusFilter] = useState<StatusValue | null>(null);
-  const [priorityFilter, setPriorityFilter] = useState<PriorityValue | null>(null);
+  const { statusFilter, priorityFilter } = useFilterContext();
 
   // Filter and sort intervals
   const filteredIntervals = useMemo(() => {
@@ -36,9 +29,6 @@ export function IntervalList() {
   if (isLoading) {
     return (
       <div className="flex-1 flex flex-col min-h-0">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-          <h1 className="font-display text-xl font-normal">Intervals</h1>
-        </div>
         <div className="flex flex-col">
           {Array.from({ length: 5 }).map((_, i) => (
             // biome-ignore lint/suspicious/noArrayIndexKey: static skeleton list
@@ -55,21 +45,6 @@ export function IntervalList() {
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
-      <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-        <h1 className="font-display text-xl font-normal">Intervals</h1>
-        <Button size="sm" onClick={() => createInterval()}>
-          <Plus size={16} />
-          New Interval
-        </Button>
-      </div>
-
-      <TopFilter
-        statusFilter={statusFilter}
-        priorityFilter={priorityFilter}
-        onStatusChange={setStatusFilter}
-        onPriorityChange={setPriorityFilter}
-      />
-
       <div className="flex-1 overflow-auto">
         {filteredIntervals.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-muted-foreground text-center">

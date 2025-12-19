@@ -1,5 +1,5 @@
-import { Link, useNavigate, useParams, ClientOnly } from '@tanstack/react-router';
-import { Plus, Search, Trash2 } from 'lucide-react';
+import { Link, useParams, ClientOnly } from '@tanstack/react-router';
+import { Plus, Search, SlidersHorizontal } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useIntervalsContext } from '../contexts/IntervalsContext';
 import { useCreateInterval } from '../hooks/useCreateInterval';
@@ -14,12 +14,14 @@ import type { Interval } from '../types/interval';
 
 interface SidebarProps {
   onSearchOpen: () => void;
+  onFilterOpen: () => void;
+  hasActiveFilters?: boolean;
 }
 
-export function Sidebar({ onSearchOpen }: SidebarProps) {
+export function Sidebar({ onSearchOpen, onFilterOpen, hasActiveFilters }: SidebarProps) {
   // Server-render the sidebar shell, client-only for intervals list
   return (
-    <aside className="w-[var(--sidebar-width)] min-w-[var(--sidebar-width)] h-screen sticky top-0 flex flex-col bg-sidebar overflow-hidden">
+    <aside className="hidden md:flex w-[var(--sidebar-width)] min-w-[var(--sidebar-width)] h-screen sticky top-0 flex-col bg-sidebar overflow-hidden">
       {/* Header - server-rendered */}
       <div className="flex items-center justify-between px-3 py-3 border-b border-sidebar-border">
         <Link
@@ -29,9 +31,20 @@ export function Sidebar({ onSearchOpen }: SidebarProps) {
           <StarIcon size={18} />
           <span>Interval</span>
         </Link>
-        <Button variant="ghost" size="icon-sm" onClick={onSearchOpen} aria-label="Search intervals">
-          <Search className="w-4 h-4" />
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon-sm" onClick={onSearchOpen} aria-label="Search intervals">
+            <Search className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={onFilterOpen}
+            aria-label="Filter intervals"
+            className={cn(hasActiveFilters && 'text-primary')}
+          >
+            <SlidersHorizontal className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
 
       {/* New Interval Button - server-rendered shell, client for action */}
@@ -85,7 +98,6 @@ function SidebarSkeleton() {
 
 function SidebarIntervalsList() {
   const { collection, intervals, isLoading } = useIntervalsContext();
-  const navigate = useNavigate();
   const params = useParams({ strict: false });
   const activeId = (params as { intervalId?: string }).intervalId;
 
@@ -114,20 +126,6 @@ function SidebarIntervalsList() {
       });
     }
     setEditingId(null);
-  };
-
-  const handleDelete = (e: React.MouseEvent, id: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    collection.delete(id);
-    if (activeId === id) {
-      const remaining = intervals.filter((i) => i.id !== id);
-      if (remaining.length > 0) {
-        navigate({ to: '/intervals/$intervalId', params: { intervalId: remaining[0].id } });
-      } else {
-        navigate({ to: '/intervals' });
-      }
-    }
   };
 
   // Focus edit input when editing
@@ -195,15 +193,6 @@ function SidebarIntervalsList() {
               >
                 {interval.title || 'Untitled'}
               </button>
-              <Button
-                variant="ghost"
-                size="icon-xs"
-                onClick={(e) => handleDelete(e, interval.id)}
-                className="text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-all"
-                aria-label="Delete interval"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </Button>
             </Link>
           )}
         </li>

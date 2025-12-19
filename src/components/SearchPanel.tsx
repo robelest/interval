@@ -5,6 +5,16 @@ import { prose } from '@trestleinc/replicate/client';
 import { useIntervalsContext } from '../contexts/IntervalsContext';
 import { useCreateInterval } from '../hooks/useCreateInterval';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -23,6 +33,7 @@ export function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   const createInterval = useCreateInterval();
@@ -112,17 +123,29 @@ export function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
     onClose();
   };
 
-  const handleDelete = (e: React.MouseEvent, id: string) => {
+  const handleDeleteClick = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    collection.delete(id);
-    // Navigate away if we deleted the current interval
-    navigate({ to: '/intervals' });
+    setDeleteConfirmId(id);
   };
 
+  const handleConfirmDelete = () => {
+    if (deleteConfirmId) {
+      collection.delete(deleteConfirmId);
+      setDeleteConfirmId(null);
+      // Navigate away if we deleted the current interval
+      navigate({ to: '/intervals' });
+    }
+  };
+
+  const intervalToDelete = deleteConfirmId
+    ? intervals.find((i) => i.id === deleteConfirmId)
+    : null;
+
   return (
+  <>
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
-        className="max-w-full sm:max-w-[520px] h-[100dvh] sm:h-auto sm:max-h-[85vh] p-0 gap-0 rounded-none sm:rounded-lg"
+        className="w-[85vw] max-w-[85vw] sm:max-w-[520px] h-auto max-h-[80vh] sm:max-h-[85vh] p-0 gap-0 rounded-none"
         showCloseButton={false}
       >
         <DialogHeader className="sr-only">
@@ -210,10 +233,7 @@ export function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
                   <Button
                     variant="ghost"
                     size="icon-xs"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDelete(e, interval.id);
-                    }}
+                    onClick={(e) => handleDeleteClick(e, interval.id)}
                     className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                     title="Delete interval"
                   >
@@ -256,6 +276,27 @@ export function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
         </div>
       </DialogContent>
     </Dialog>
+
+    {/* Delete confirmation dialog */}
+    <AlertDialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete interval?</AlertDialogTitle>
+          <AlertDialogDescription>
+            {intervalToDelete
+              ? `"${intervalToDelete.title || 'Untitled'}" will be permanently deleted. This action cannot be undone.`
+              : 'This action cannot be undone.'}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction variant="destructive" onClick={handleConfirmDelete}>
+            Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  </>
   );
 }
 

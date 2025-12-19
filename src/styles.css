@@ -380,16 +380,12 @@
    ============================================ */
 
 @media (max-width: 768px) {
-  .app-layout {
-    @apply flex-col;
-  }
-
   .main-content {
     @apply border-l-0;
   }
 
   .editor-container {
-    @apply px-5 py-8;
+    @apply px-4 py-6 pb-24;
   }
 
   .editor-title {
@@ -398,5 +394,16 @@
 
   .welcome-hint {
     @apply hidden;
+  }
+
+  .welcome-page {
+    @apply pb-24;
+  }
+}
+
+/* Safe area handling for mobile action bar */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .main-content {
+    padding-bottom: env(safe-area-inset-bottom);
   }
 }

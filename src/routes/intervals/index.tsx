@@ -17,9 +17,6 @@ function IntervalsIndexComponent() {
 function IntervalListLoading() {
   return (
     <div className="flex-1 flex flex-col">
-      <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-        <Skeleton className="h-6 w-24" />
-      </div>
       <div className="flex flex-col">
         {Array.from({ length: 5 }).map((_, i) => (
           // biome-ignore lint/suspicious/noArrayIndexKey: static skeleton list

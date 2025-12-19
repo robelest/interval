@@ -6,7 +6,24 @@ import { Effect, Fiber } from 'effect';
 import { useEffect, useState, useRef } from 'react';
 import type { EditorBinding } from '@trestleinc/replicate/client';
 
+import {
+  Status,
+  Priority,
+  StatusLabels,
+  PriorityLabels,
+  type StatusValue,
+  type PriorityValue,
+} from '../types/interval';
 import type { Interval } from '../types/interval';
+import { StatusIcon } from './StatusIcon';
+import { PriorityIcon } from './PriorityIcon';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+} from './ui/dropdown-menu';
 
 interface IntervalEditorProps {
   intervalId: string;
@@ -17,9 +34,10 @@ interface IntervalEditorProps {
     update(id: string, updater: (draft: Interval) => void): void;
   };
   interval: Interval;
+  onPropertyUpdate?: (updates: Partial<Pick<Interval, 'status' | 'priority'>>) => void;
 }
 
-export function IntervalEditor({ intervalId, collection, interval }: IntervalEditorProps) {
+export function IntervalEditor({ intervalId, collection, interval, onPropertyUpdate }: IntervalEditorProps) {
   const [binding, setBinding] = useState<EditorBinding | null>(null);
   const [error, setError] = useState<Error | null>(null);
 
@@ -81,6 +99,7 @@ export function IntervalEditor({ intervalId, collection, interval }: IntervalEdi
       interval={interval}
       collection={collection}
       intervalId={intervalId}
+      onPropertyUpdate={onPropertyUpdate}
     />
   );
 }
@@ -93,6 +112,7 @@ interface IntervalEditorViewProps {
     update(id: string, updater: (draft: Interval) => void): void;
   };
   intervalId: string;
+  onPropertyUpdate?: (updates: Partial<Pick<Interval, 'status' | 'priority'>>) => void;
 }
 
 function IntervalEditorView({
@@ -100,6 +120,7 @@ function IntervalEditorView({
   interval,
   collection,
   intervalId,
+  onPropertyUpdate,
 }: IntervalEditorViewProps) {
   const [title, setTitle] = useState(interval.title);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -164,10 +185,59 @@ function IntervalEditorView({
     }
   };
 
+  const statusOptions = Object.values(Status) as StatusValue[];
+  const priorityOptions = Object.values(Priority) as PriorityValue[];
+
   return (
     <div className="max-w-[680px] mx-auto px-8 py-12 w-full">
-      {/* Header with title */}
+      {/* Header with title and mobile properties */}
       <div className="mb-8 pb-6 border-b border-border">
+        {/* Mobile properties row */}
+        {onPropertyUpdate && (
+          <div className="flex items-center gap-2 mb-4 lg:hidden">
+            <DropdownMenu>
+              <DropdownMenuTrigger className="flex items-center gap-2 px-2 py-1.5 text-sm rounded-sm hover:bg-muted transition-colors">
+                <StatusIcon status={interval.status} size={14} />
+                <span>{StatusLabels[interval.status]}</span>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuRadioGroup
+                  value={interval.status}
+                  onValueChange={(v) => onPropertyUpdate({ status: v as StatusValue })}
+                >
+                  {statusOptions.map((status) => (
+                    <DropdownMenuRadioItem key={status} value={status}>
+                      <StatusIcon status={status} size={14} />
+                      {StatusLabels[status]}
+                    </DropdownMenuRadioItem>
+                  ))}
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger className="flex items-center gap-2 px-2 py-1.5 text-sm rounded-sm hover:bg-muted transition-colors">
+                <PriorityIcon priority={interval.priority} size={14} />
+                <span>{PriorityLabels[interval.priority]}</span>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuRadioGroup
+                  value={interval.priority}
+                  onValueChange={(v) => onPropertyUpdate({ priority: v as PriorityValue })}
+                >
+                  {priorityOptions.map((priority) => (
+                    <DropdownMenuRadioItem key={priority} value={priority}>
+                      <PriorityIcon priority={priority} size={14} />
+                      {PriorityLabels[priority]}
+                    </DropdownMenuRadioItem>
+                  ))}
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )}
+
+        {/* Title */}
         {isEditingTitle ? (
           <input
             ref={inputRef}

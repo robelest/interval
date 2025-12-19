@@ -11,13 +11,19 @@ import {
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools';
 import { configure, getConsoleSink, type LogRecord } from '@logtape/logtape';
 import { ConvexProvider, ConvexReactClient } from 'convex/react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, createContext, useContext } from 'react';
+import { Search, Plus, ArrowLeft, SlidersHorizontal } from 'lucide-react';
+import { useNavigate } from '@tanstack/react-router';
+import { Button } from '../components/ui/button';
 import { ConvexRxErrorBoundary } from '../components/ErrorBoundary';
 import { ReloadPrompt } from '../components/ReloadPrompt';
 import { Sidebar } from '../components/Sidebar';
 import { SearchPanel } from '../components/SearchPanel';
+import { FilterDialog } from '../components/FilterDialog';
 import { IntervalsProvider } from '../contexts/IntervalsContext';
 import { useCreateInterval } from '../hooks/useCreateInterval';
+import { cn } from '@/lib/utils';
+import type { StatusValue, PriorityValue } from '../types/interval';
 
 import appCss from '../styles.css?url';
 
@@ -58,6 +64,32 @@ try {
 // Create Convex client for React context
 const convexUrl = import.meta.env.VITE_CONVEX_URL;
 const convexReactClient = convexUrl ? new ConvexReactClient(convexUrl) : null;
+
+// Filter context for sharing filter state across components
+interface FilterContextValue {
+  statusFilter: StatusValue | null;
+  priorityFilter: PriorityValue | null;
+  setStatusFilter: (status: StatusValue | null) => void;
+  setPriorityFilter: (priority: PriorityValue | null) => void;
+  hasActiveFilters: boolean;
+}
+
+const FilterContext = createContext<FilterContextValue | null>(null);
+
+export function useFilterContext() {
+  const ctx = useContext(FilterContext);
+  if (!ctx) {
+    // Return default values for SSR
+    return {
+      statusFilter: null,
+      priorityFilter: null,
+      setStatusFilter: () => {},
+      setPriorityFilter: () => {},
+      hasActiveFilters: false,
+    };
+  }
+  return ctx;
+}
 
 interface RouterContext {
   queryClient: QueryClient;
@@ -119,19 +151,114 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 
 function AppLayout() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<StatusValue | null>(null);
+  const [priorityFilter, setPriorityFilter] = useState<PriorityValue | null>(null);
+
+  const hasActiveFilters = statusFilter !== null || priorityFilter !== null;
+
+  const filterContextValue: FilterContextValue = {
+    statusFilter,
+    priorityFilter,
+    setStatusFilter,
+    setPriorityFilter,
+    hasActiveFilters,
+  };
 
   // Server-render the full layout structure
   // IntervalsProvider is in RootDocument, wrapping this on client
   return (
-    <div className="app-layout">
-      <Sidebar onSearchOpen={() => setIsSearchOpen(true)} />
-      <main className="main-content">
-        <Outlet />
-      </main>
-      <ClientOnly fallback={null}>
-        <KeyboardShortcuts onSearchOpen={() => setIsSearchOpen(true)} />
-        <SearchPanel isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
-      </ClientOnly>
+    <FilterContext.Provider value={filterContextValue}>
+      <div className="app-layout">
+        <Sidebar
+          onSearchOpen={() => setIsSearchOpen(true)}
+          onFilterOpen={() => setIsFilterOpen(true)}
+          hasActiveFilters={hasActiveFilters}
+        />
+        <main className="main-content">
+          <Outlet />
+        </main>
+        <ClientOnly fallback={null}>
+          <KeyboardShortcuts onSearchOpen={() => setIsSearchOpen(true)} />
+          <SearchPanel isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+          <FilterDialog
+            isOpen={isFilterOpen}
+            onClose={() => setIsFilterOpen(false)}
+            statusFilter={statusFilter}
+            priorityFilter={priorityFilter}
+            onStatusChange={setStatusFilter}
+            onPriorityChange={setPriorityFilter}
+          />
+          <MobileActionBar
+            onSearchOpen={() => setIsSearchOpen(true)}
+            onFilterOpen={() => setIsFilterOpen(true)}
+            hasActiveFilters={hasActiveFilters}
+          />
+        </ClientOnly>
+      </div>
+    </FilterContext.Provider>
+  );
+}
+
+/**
+ * Floating action bar for mobile navigation.
+ * tldraw-inspired but with sharp corners to match design language.
+ */
+function MobileActionBar({
+  onSearchOpen,
+  onFilterOpen,
+  hasActiveFilters,
+}: {
+  onSearchOpen: () => void;
+  onFilterOpen: () => void;
+  hasActiveFilters: boolean;
+}) {
+  const navigate = useNavigate();
+  const createInterval = useCreateInterval();
+
+  return (
+    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 md:hidden pb-[env(safe-area-inset-bottom)]">
+      <div className="flex items-center gap-1 bg-card border border-border shadow-lg p-1">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => navigate({ to: '/intervals' })}
+          aria-label="Back to intervals"
+          className="h-10 w-10"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </Button>
+        <div className="w-px h-6 bg-border" />
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onSearchOpen}
+          aria-label="Search intervals"
+          className="h-10 w-10"
+        >
+          <Search className="w-5 h-5" />
+        </Button>
+        <div className="w-px h-6 bg-border" />
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onFilterOpen}
+          aria-label="Filter intervals"
+          className={cn('h-10 w-10', hasActiveFilters && 'text-primary')}
+        >
+          <SlidersHorizontal className="w-5 h-5" />
+        </Button>
+        <div className="w-px h-6 bg-border" />
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={createInterval}
+          aria-label="New interval"
+          className="h-10 w-10"
+        >
+          <Plus className="w-5 h-5" />
+        </Button>
+      </div>
     </div>
   );
 }

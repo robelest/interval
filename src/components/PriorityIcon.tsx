@@ -1,8 +1,9 @@
 import { Priority, PriorityLabels, type PriorityValue } from '../types/interval';
+import { cn } from '@/lib/utils';
 
 const priorityColors: Record<PriorityValue, string> = {
-  [Priority.NONE]: '#9ca3af', // gray-400
-  [Priority.LOW]: '#6b7280', // gray-500
+  [Priority.NONE]: 'currentColor',
+  [Priority.LOW]: 'currentColor',
   [Priority.MEDIUM]: '#f59e0b', // amber-500
   [Priority.HIGH]: '#f97316', // orange-500
   [Priority.URGENT]: '#ef4444', // red-500
@@ -31,28 +32,35 @@ export function PriorityIcon({ priority, size = 14, className = '' }: PriorityIc
             : 0;
 
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 16 16"
-      fill="none"
-      className={className}
-      role="img"
-      aria-label={label}
+    <div
+      className={cn(
+        'inline-flex items-center justify-center rounded-sm bg-border',
+        className
+      )}
+      style={{ width: size + 6, height: size + 6 }}
     >
-      <title>{label}</title>
-      {/* 4 vertical bars */}
-      {[0, 1, 2, 3].map((i) => (
-        <rect
-          key={i}
-          x={1 + i * 4}
-          y={12 - (i + 1) * 2.5}
-          width={3}
-          height={(i + 1) * 2.5}
-          rx={0.5}
-          fill={i < filledBars ? color : '#e5e7eb'}
-        />
-      ))}
-    </svg>
+      <svg
+        width={size}
+        height={size}
+        viewBox="0 0 16 16"
+        fill="none"
+        role="img"
+        aria-label={label}
+      >
+        <title>{label}</title>
+        {/* 4 vertical bars */}
+        {[0, 1, 2, 3].map((i) => (
+          <rect
+            key={i}
+            x={1 + i * 4}
+            y={12 - (i + 1) * 2.5}
+            width={3}
+            height={(i + 1) * 2.5}
+            rx={0.5}
+            fill={i < filledBars ? color : 'var(--border)'}
+          />
+        ))}
+      </svg>
+    </div>
   );
 }
