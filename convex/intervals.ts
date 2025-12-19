@@ -2,39 +2,39 @@ import { replicate } from '@trestleinc/replicate/server';
 import { query } from './_generated/server';
 import { components } from './_generated/api';
 import { v } from 'convex/values';
-import type { Issue } from '../src/types/issue';
+import type { Interval } from '../src/types/interval';
 
 const r = replicate(components.replicate);
 
-export const { stream, material, insert, update, remove, recovery } = r<Issue>({
-  collection: 'issues',
+export const { stream, material, insert, update, remove, recovery } = r<Interval>({
+  collection: 'intervals',
 });
 
-// Get a single issue by ID
+// Get a single interval by ID
 export const get = query({
   args: { id: v.string() },
   handler: async (ctx, { id }) => {
     return await ctx.db
-      .query('issues')
+      .query('intervals')
       .withIndex('by_doc_id', (q) => q.eq('id', id))
       .first();
   },
 });
 
-// List all issues ordered by last updated
+// List all intervals ordered by last updated
 export const list = query({
   args: {},
   handler: async (ctx) => {
-    return await ctx.db.query('issues').withIndex('by_updated').order('desc').collect();
+    return await ctx.db.query('intervals').withIndex('by_updated').order('desc').collect();
   },
 });
 
-// List issues by status
+// List intervals by status
 export const listByStatus = query({
   args: { status: v.string() },
   handler: async (ctx, { status }) => {
     return await ctx.db
-      .query('issues')
+      .query('intervals')
       .withIndex('by_status', (q) => q.eq('status', status))
       .collect();
   },

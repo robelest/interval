@@ -1,4 +1,4 @@
-import { Priority, PriorityLabels, type PriorityValue } from '../types/issue';
+import { Priority, PriorityLabels, type PriorityValue } from '../types/interval';
 
 const priorityColors: Record<PriorityValue, string> = {
   [Priority.NONE]: '#9ca3af', // gray-400

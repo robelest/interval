@@ -3,39 +3,39 @@ import { convexCollectionOptions, type EditorBinding } from '@trestleinc/replica
 import { api } from '../../convex/_generated/api';
 import { convexClient } from '../router';
 import { getSharedPersistence } from '@/lib/persistence';
-import type { Comment } from '../types/interval';
+import type { Interval } from '../types/interval';
 
 // Collection with utils.prose() for editor bindings
-type CommentsCollection = Collection<Comment> & {
+type IntervalsCollection = Collection<Interval> & {
   utils: {
-    prose(documentId: string, field: 'body'): Promise<EditorBinding>;
+    prose(documentId: string, field: 'description'): Promise<EditorBinding>;
   };
   singleResult?: never; // Explicitly satisfy NonSingleResult discriminator for TanStack DB
 };
 
-let commentsCollection: CommentsCollection | null = null;
+let intervalsCollection: IntervalsCollection | null = null;
 
 /**
- * Get the comments collection singleton.
+ * Get the intervals collection singleton.
  * The collection is created once and reused across all components.
  */
-export function useComments(): CommentsCollection {
-  if (!commentsCollection) {
+export function useIntervals(): IntervalsCollection {
+  if (!intervalsCollection) {
     // Cast through unknown due to TanStack DB's complex generic type inference
     // The type is correct at runtime, but TypeScript can't verify the deep sync callback types
-    commentsCollection = createCollection(
-      convexCollectionOptions<Comment>({
+    intervalsCollection = createCollection(
+      convexCollectionOptions<Interval>({
         convexClient,
-        api: api.comments,
-        collection: 'comments',
-        getKey: (comment: Comment) => comment.id,
-        prose: ['body'],
+        api: api.intervals,
+        collection: 'intervals',
+        getKey: (interval: Interval) => interval.id,
+        prose: ['description'],
         persistence: getSharedPersistence(),
       })
-    ) as unknown as CommentsCollection;
+    ) as unknown as IntervalsCollection;
   }
-  return commentsCollection;
+  return intervalsCollection;
 }
 
 // Re-export for convenience
-export type { Comment } from '../types/interval';
+export type { Interval } from '../types/interval';

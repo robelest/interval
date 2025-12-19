@@ -16,8 +16,8 @@ import { ConvexRxErrorBoundary } from '../components/ErrorBoundary';
 import { ReloadPrompt } from '../components/ReloadPrompt';
 import { Sidebar } from '../components/Sidebar';
 import { SearchPanel } from '../components/SearchPanel';
-import { IssuesProvider } from '../contexts/IssuesContext';
-import { useCreateIssue } from '../hooks/useCreateIssue';
+import { IntervalsProvider } from '../contexts/IntervalsContext';
+import { useCreateInterval } from '../hooks/useCreateInterval';
 
 import appCss from '../styles.css?url';
 
@@ -99,7 +99,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
           >
             {convexReactClient ? (
               <ConvexProvider client={convexReactClient}>
-                <IssuesProvider>{children}</IssuesProvider>
+                <IntervalsProvider>{children}</IntervalsProvider>
               </ConvexProvider>
             ) : (
               children
@@ -121,7 +121,7 @@ function AppLayout() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   // Server-render the full layout structure
-  // IssuesProvider is in RootDocument, wrapping this on client
+  // IntervalsProvider is in RootDocument, wrapping this on client
   return (
     <div className="app-layout">
       <Sidebar onSearchOpen={() => setIsSearchOpen(true)} />
@@ -138,10 +138,10 @@ function AppLayout() {
 
 /**
  * Client-only keyboard shortcuts component.
- * Must be inside IssuesProvider (via ClientOnly in RootDocument).
+ * Must be inside IntervalsProvider (via ClientOnly in RootDocument).
  */
 function KeyboardShortcuts({ onSearchOpen }: { onSearchOpen: () => void }) {
-  const createIssue = useCreateIssue();
+  const createInterval = useCreateInterval();
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -157,17 +157,17 @@ function KeyboardShortcuts({ onSearchOpen }: { onSearchOpen: () => void }) {
         onSearchOpen();
       }
 
-      // Option+N (Alt+N): Create new issue
+      // Option+N (Alt+N): Create new interval
       // Use e.code for Mac compatibility (Option key produces special chars like ñ)
       if (e.altKey && e.code === 'KeyN') {
         e.preventDefault();
-        createIssue();
+        createInterval();
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [onSearchOpen, createIssue]);
+  }, [onSearchOpen, createInterval]);
 
   return null;
 }

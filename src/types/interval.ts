@@ -36,7 +36,7 @@ export const PriorityLabels: Record<PriorityValue, string> = {
   urgent: 'Urgent',
 };
 
-export interface Issue {
+export interface Interval {
   id: string;
   title: string;
   description: XmlFragmentJSON;
@@ -48,7 +48,7 @@ export interface Issue {
 
 export interface Comment {
   id: string;
-  issueId: string;
+  intervalId: string;
   body: XmlFragmentJSON;
   createdAt: number;
   updatedAt: number;

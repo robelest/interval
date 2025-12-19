@@ -3,22 +3,22 @@ import { useLiveQuery } from '@tanstack/react-db';
 import { useComments } from '../collections/useComments';
 import { CommentEditor, NewCommentInput } from './CommentEditor';
 import { Card, CardHeader, CardContent } from './ui/card';
-import type { Comment } from '../types/issue';
+import type { Comment } from '../types/interval';
 
 interface CommentListProps {
-  issueId: string;
+  intervalId: string;
 }
 
-export function CommentList({ issueId }: CommentListProps) {
+export function CommentList({ intervalId }: CommentListProps) {
   const commentsCollection = useComments();
   const { data: allComments = [], isLoading } = useLiveQuery(commentsCollection);
 
-  // Filter comments for this issue
+  // Filter comments for this interval
   const comments = useMemo(() => {
     return (allComments as Comment[])
-      .filter((c) => c.issueId === issueId)
+      .filter((c) => c.intervalId === intervalId)
       .sort((a, b) => a.createdAt - b.createdAt);
-  }, [allComments, issueId]);
+  }, [allComments, intervalId]);
 
   const handleNewComment = (text: string) => {
     const id = crypto.randomUUID();
@@ -26,7 +26,7 @@ export function CommentList({ issueId }: CommentListProps) {
 
     commentsCollection.insert({
       id,
-      issueId,
+      intervalId,
       body: {
         type: 'doc',
         content: [{ type: 'paragraph', content: [{ type: 'text', text }] }],

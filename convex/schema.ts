@@ -3,7 +3,7 @@ import { v } from 'convex/values';
 import { table, prose } from '@trestleinc/replicate/server';
 
 export default defineSchema({
-  issues: table(
+  intervals: table(
     {
       id: v.string(),
       title: v.string(),
@@ -25,7 +25,7 @@ export default defineSchema({
   comments: table(
     {
       id: v.string(),
-      issueId: v.string(),
+      intervalId: v.string(),
       body: prose(),
       createdAt: v.number(),
       updatedAt: v.number(),
@@ -34,6 +34,6 @@ export default defineSchema({
       t
         .index('by_doc_id', ['id'])
         .index('by_timestamp', ['timestamp'])
-        .index('by_issue', ['issueId'])
+        .index('by_interval', ['intervalId'])
   ),
 });

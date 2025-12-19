@@ -1,43 +1,43 @@
 import { useState, useMemo } from 'react';
 import { Plus } from 'lucide-react';
-import { useIssuesContext } from '../contexts/IssuesContext';
-import { useCreateIssue } from '../hooks/useCreateIssue';
-import { IssueRow } from './IssueRow';
+import { useIntervalsContext } from '../contexts/IntervalsContext';
+import { useCreateInterval } from '../hooks/useCreateInterval';
+import { IntervalRow } from './IntervalRow';
 import { TopFilter } from './TopFilter';
 import { Button } from './ui/button';
 import { Skeleton } from './ui/skeleton';
-import type { StatusValue, PriorityValue } from '../types/issue';
+import type { StatusValue, PriorityValue } from '../types/interval';
 
-export function IssueList() {
-  const { issues, isLoading } = useIssuesContext();
-  const createIssue = useCreateIssue();
+export function IntervalList() {
+  const { intervals, isLoading } = useIntervalsContext();
+  const createInterval = useCreateInterval();
 
   const [statusFilter, setStatusFilter] = useState<StatusValue | null>(null);
   const [priorityFilter, setPriorityFilter] = useState<PriorityValue | null>(null);
 
-  // Filter and sort issues
-  const filteredIssues = useMemo(() => {
-    let result = [...issues];
+  // Filter and sort intervals
+  const filteredIntervals = useMemo(() => {
+    let result = [...intervals];
 
     if (statusFilter) {
-      result = result.filter((issue) => issue.status === statusFilter);
+      result = result.filter((interval) => interval.status === statusFilter);
     }
 
     if (priorityFilter) {
-      result = result.filter((issue) => issue.priority === priorityFilter);
+      result = result.filter((interval) => interval.priority === priorityFilter);
     }
 
     // Sort by updatedAt descending
     result.sort((a, b) => b.updatedAt - a.updatedAt);
 
     return result;
-  }, [issues, statusFilter, priorityFilter]);
+  }, [intervals, statusFilter, priorityFilter]);
 
   if (isLoading) {
     return (
       <div className="flex-1 flex flex-col min-h-0">
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-          <h1 className="font-display text-xl font-normal">Issues</h1>
+          <h1 className="font-display text-xl font-normal">Intervals</h1>
         </div>
         <div className="flex flex-col">
           {Array.from({ length: 5 }).map((_, i) => (
@@ -56,10 +56,10 @@ export function IssueList() {
   return (
     <div className="flex-1 flex flex-col min-h-0">
       <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-        <h1 className="font-display text-xl font-normal">Issues</h1>
-        <Button size="sm" onClick={() => createIssue()}>
+        <h1 className="font-display text-xl font-normal">Intervals</h1>
+        <Button size="sm" onClick={() => createInterval()}>
           <Plus size={16} />
-          New Issue
+          New Interval
         </Button>
       </div>
 
@@ -71,11 +71,11 @@ export function IssueList() {
       />
 
       <div className="flex-1 overflow-auto">
-        {filteredIssues.length === 0 ? (
+        {filteredIntervals.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-muted-foreground text-center">
-            {issues.length === 0 ? (
+            {intervals.length === 0 ? (
               <>
-                <p className="m-0">No issues yet</p>
+                <p className="m-0">No intervals yet</p>
                 <p className="text-xs opacity-60 mt-1">
                   Press{' '}
                   <kbd className="inline-block px-1.5 py-0.5 mx-0.5 font-mono text-[0.6875rem] bg-background border border-border rounded-sm">
@@ -84,17 +84,17 @@ export function IssueList() {
                   <kbd className="inline-block px-1.5 py-0.5 mx-0.5 font-mono text-[0.6875rem] bg-background border border-border rounded-sm">
                     N
                   </kbd>{' '}
-                  to create your first issue
+                  to create your first interval
                 </p>
               </>
             ) : (
-              <p className="m-0">No issues match your filters</p>
+              <p className="m-0">No intervals match your filters</p>
             )}
           </div>
         ) : (
           <div className="flex flex-col">
-            {filteredIssues.map((issue) => (
-              <IssueRow key={issue.id} issue={issue} />
+            {filteredIntervals.map((interval) => (
+              <IntervalRow key={interval.id} interval={interval} />
             ))}
           </div>
         )}

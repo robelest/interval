@@ -2,7 +2,7 @@ import { replicate } from '@trestleinc/replicate/server';
 import { query } from './_generated/server';
 import { components } from './_generated/api';
 import { v } from 'convex/values';
-import type { Comment } from '../src/types/issue';
+import type { Comment } from '../src/types/interval';
 
 const r = replicate(components.replicate);
 
@@ -21,13 +21,13 @@ export const get = query({
   },
 });
 
-// List comments for an issue
-export const listByIssue = query({
-  args: { issueId: v.string() },
-  handler: async (ctx, { issueId }) => {
+// List comments for an interval
+export const listByInterval = query({
+  args: { intervalId: v.string() },
+  handler: async (ctx, { intervalId }) => {
     return await ctx.db
       .query('comments')
-      .withIndex('by_issue', (q) => q.eq('issueId', issueId))
+      .withIndex('by_interval', (q) => q.eq('intervalId', intervalId))
       .collect();
   },
 });

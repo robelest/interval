@@ -1,4 +1,4 @@
-import { Status, StatusLabels, type StatusValue } from '../types/issue';
+import { Status, StatusLabels, type StatusValue } from '../types/interval';
 
 const statusColors: Record<StatusValue, string> = {
   [Status.BACKLOG]: '#6b7280', // gray-500

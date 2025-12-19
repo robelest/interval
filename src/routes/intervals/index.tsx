@@ -1,20 +1,20 @@
 import { createFileRoute, ClientOnly } from '@tanstack/react-router';
-import { IssueList } from '../../components/IssueList';
+import { IntervalList } from '../../components/IntervalList';
 import { Skeleton } from '../../components/ui/skeleton';
 
-export const Route = createFileRoute('/issues/')({
-  component: IssuesIndexComponent,
+export const Route = createFileRoute('/intervals/')({
+  component: IntervalsIndexComponent,
 });
 
-function IssuesIndexComponent() {
+function IntervalsIndexComponent() {
   return (
-    <ClientOnly fallback={<IssueListLoading />}>
-      <IssueList />
+    <ClientOnly fallback={<IntervalListLoading />}>
+      <IntervalList />
     </ClientOnly>
   );
 }
 
-function IssueListLoading() {
+function IntervalListLoading() {
   return (
     <div className="flex-1 flex flex-col">
       <div className="flex items-center justify-between px-6 py-4 border-b border-border">

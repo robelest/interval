@@ -5,7 +5,7 @@ import {
   PriorityLabels,
   type StatusValue,
   type PriorityValue,
-} from '../types/issue';
+} from '../types/interval';
 import { StatusIcon } from './StatusIcon';
 import { PriorityIcon } from './PriorityIcon';
 import { Button } from './ui/button';

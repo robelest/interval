@@ -2,15 +2,15 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { Search, Plus, Trash2 } from 'lucide-react';
 import { extract } from '@trestleinc/replicate/client';
-import { useIssuesContext } from '../contexts/IssuesContext';
-import { useCreateIssue } from '../hooks/useCreateIssue';
+import { useIntervalsContext } from '../contexts/IntervalsContext';
+import { useCreateInterval } from '../hooks/useCreateInterval';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { StatusIcon } from './StatusIcon';
 import { cn } from '@/lib/utils';
-import type { Issue } from '../types/issue';
+import type { Interval } from '../types/interval';
 
 interface SearchPanelProps {
   isOpen: boolean;
@@ -25,9 +25,9 @@ export function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
-  const createIssue = useCreateIssue();
+  const createInterval = useCreateInterval();
 
-  const { collection, issues } = useIssuesContext();
+  const { collection, intervals } = useIntervalsContext();
 
   // Debounce search query
   useEffect(() => {
@@ -37,19 +37,19 @@ export function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
     return () => clearTimeout(timer);
   }, [query]);
 
-  // Memoize text extraction per issue
-  const issuesWithText = useMemo(
+  // Memoize text extraction per interval
+  const intervalsWithText = useMemo(
     () =>
-      (issues as Issue[]).map((i) => ({
+      (intervals as Interval[]).map((i) => ({
         ...i,
         textContent: extract(i.description).toLowerCase(),
       })),
-    [issues]
+    [intervals]
   );
 
-  // Filter locally - show recent issues when empty (Raycast-style)
+  // Filter locally - show recent intervals when empty (Raycast-style)
   const results = useMemo(() => {
-    const sorted = [...issuesWithText].sort((a, b) => b.updatedAt - a.updatedAt);
+    const sorted = [...intervalsWithText].sort((a, b) => b.updatedAt - a.updatedAt);
 
     if (!debouncedQuery.trim()) {
       return sorted.slice(0, 10); // Show recent 10 when empty
@@ -59,7 +59,7 @@ export function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
     return sorted
       .filter((i) => i.title?.toLowerCase().includes(q) || i.textContent.includes(q))
       .slice(0, 20);
-  }, [issuesWithText, debouncedQuery]);
+  }, [intervalsWithText, debouncedQuery]);
 
   // Reset state when opened
   useEffect(() => {
@@ -79,13 +79,13 @@ export function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
     }
   }, [results.length, selectedIndex]);
 
-  // Handle creating new issue
-  const handleCreateIssue = () => {
-    createIssue();
+  // Handle creating new interval
+  const handleCreateInterval = () => {
+    createInterval();
     onClose();
   };
 
-  // Handle keyboard navigation (index -1 = New Issue action)
+  // Handle keyboard navigation (index -1 = New Interval action)
   const handleKeyDown = (e: React.KeyboardEvent) => {
     switch (e.key) {
       case 'ArrowDown':
@@ -99,7 +99,7 @@ export function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
       case 'Enter':
         e.preventDefault();
         if (selectedIndex === -1) {
-          handleCreateIssue();
+          handleCreateInterval();
         } else if (results[selectedIndex]) {
           handleSelect(results[selectedIndex].id);
         }
@@ -108,15 +108,15 @@ export function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
   };
 
   const handleSelect = (id: string) => {
-    navigate({ to: '/issues/$issueId', params: { issueId: id } });
+    navigate({ to: '/intervals/$intervalId', params: { intervalId: id } });
     onClose();
   };
 
   const handleDelete = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     collection.delete(id);
-    // Navigate away if we deleted the current issue
-    navigate({ to: '/issues' });
+    // Navigate away if we deleted the current interval
+    navigate({ to: '/intervals' });
   };
 
   return (
@@ -126,7 +126,7 @@ export function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
         showCloseButton={false}
       >
         <DialogHeader className="sr-only">
-          <DialogTitle>Search issues</DialogTitle>
+          <DialogTitle>Search intervals</DialogTitle>
         </DialogHeader>
 
         {/* Search Input */}
@@ -138,7 +138,7 @@ export function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Search issues..."
+            placeholder="Search intervals..."
             className="border-0 p-0 h-auto text-sm focus-visible:ring-0 focus-visible:ring-offset-0"
           />
           {/* Mobile close button */}
@@ -154,33 +154,33 @@ export function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
         {/* Results */}
         <ScrollArea className="flex-1 sm:max-h-[400px]">
           <div className="p-1">
-            {/* New Issue action */}
+            {/* New Interval action */}
             <Button
               variant="ghost"
               className={cn(
                 'w-full justify-start gap-3 h-auto py-2.5 px-3 text-left',
                 selectedIndex === -1 && 'bg-accent text-accent-foreground'
               )}
-              onClick={handleCreateIssue}
+              onClick={handleCreateInterval}
               onMouseEnter={() => setSelectedIndex(-1)}
             >
               <Plus className="w-4 h-4 shrink-0 text-primary" />
-              <span className="text-sm font-medium">New Issue</span>
+              <span className="text-sm font-medium">New Interval</span>
               <span className="ml-auto text-xs text-muted-foreground">⌥N</span>
             </Button>
 
             {/* Divider */}
             {results.length > 0 && <div className="h-px bg-border my-1" />}
 
-            {/* Issue results */}
+            {/* Interval results */}
             {results.length === 0 && debouncedQuery.trim() ? (
               <div className="py-6 text-center text-muted-foreground text-sm">
-                <p>No issues found for "{query}"</p>
+                <p>No intervals found for "{query}"</p>
               </div>
             ) : (
-              results.map((issue, index) => (
+              results.map((interval, index) => (
                 <div
-                  key={issue.id}
+                  key={interval.id}
                   role="option"
                   tabIndex={0}
                   className={cn(
@@ -188,18 +188,18 @@ export function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
                     'rounded-sm transition-colors hover:bg-accent hover:text-accent-foreground',
                     index === selectedIndex && 'bg-accent text-accent-foreground'
                   )}
-                  onClick={() => handleSelect(issue.id)}
+                  onClick={() => handleSelect(interval.id)}
                   onMouseEnter={() => setSelectedIndex(index)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSelect(issue.id)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSelect(interval.id)}
                 >
-                  <StatusIcon status={issue.status} size={14} className="shrink-0" />
+                  <StatusIcon status={interval.status} size={14} className="shrink-0" />
                   <div className="flex-1 min-w-0">
                     <span className="block text-sm font-medium truncate">
-                      {issue.title || 'Untitled'}
+                      {interval.title || 'Untitled'}
                     </span>
-                    {issue.textContent && (
+                    {interval.textContent && (
                       <span className="block text-xs text-muted-foreground truncate">
-                        {truncate(issue.textContent, 80)}
+                        {truncate(interval.textContent, 80)}
                       </span>
                     )}
                   </div>
@@ -208,10 +208,10 @@ export function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
                     size="icon-xs"
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleDelete(e, issue.id);
+                      handleDelete(e, interval.id);
                     }}
                     className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                    title="Delete issue"
+                    title="Delete interval"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </Button>
@@ -222,8 +222,8 @@ export function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
             {/* Empty state hint */}
             {results.length === 0 && !debouncedQuery.trim() && (
               <div className="py-6 text-center text-muted-foreground text-sm">
-                <p>No issues yet</p>
-                <p className="mt-1 text-xs">Create your first issue above</p>
+                <p>No intervals yet</p>
+                <p className="mt-1 text-xs">Create your first interval above</p>
               </div>
             )}
           </div>

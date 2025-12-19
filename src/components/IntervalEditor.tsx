@@ -6,32 +6,32 @@ import { Effect, Fiber } from 'effect';
 import { useEffect, useState, useRef } from 'react';
 import type { EditorBinding } from '@trestleinc/replicate/client';
 
-import type { Issue } from '../types/issue';
+import type { Interval } from '../types/interval';
 
-interface IssueEditorProps {
-  issueId: string;
+interface IntervalEditorProps {
+  intervalId: string;
   collection: {
     utils: {
       prose(documentId: string, field: 'description'): Promise<EditorBinding>;
     };
-    update(id: string, updater: (draft: Issue) => void): void;
+    update(id: string, updater: (draft: Interval) => void): void;
   };
-  issue: Issue;
+  interval: Interval;
 }
 
-export function IssueEditor({ issueId, collection, issue }: IssueEditorProps) {
+export function IntervalEditor({ intervalId, collection, interval }: IntervalEditorProps) {
   const [binding, setBinding] = useState<EditorBinding | null>(null);
   const [error, setError] = useState<Error | null>(null);
 
   // Get editor binding using Effect-TS for proper cancellation
   useEffect(() => {
-    // Reset state immediately on issue change
+    // Reset state immediately on interval change
     setBinding(null);
     setError(null);
 
     // Create an interruptible effect for fetching the binding
     const fetchBinding = Effect.tryPromise({
-      try: () => collection.utils.prose(issueId, 'description'),
+      try: () => collection.utils.prose(intervalId, 'description'),
       catch: (e) => e as Error,
     });
 
@@ -46,14 +46,14 @@ export function IssueEditor({ issueId, collection, issue }: IssueEditorProps) {
         Effect.runPromise
       )
       .catch(() => {
-        // Silently ignore interruption - expected when switching issues
+        // Silently ignore interruption - expected when switching intervals
       });
 
-    // Cleanup: interrupt the fiber when issueId changes or component unmounts
+    // Cleanup: interrupt the fiber when intervalId changes or component unmounts
     return () => {
       Effect.runFork(Fiber.interrupt(fiber));
     };
-  }, [collection, issueId]);
+  }, [collection, intervalId]);
 
   if (error) {
     return (
@@ -73,30 +73,35 @@ export function IssueEditor({ issueId, collection, issue }: IssueEditorProps) {
   }
 
   // Render editor only when binding is ready
-  // key={issueId} forces complete remount when switching issues
+  // key={intervalId} forces complete remount when switching intervals
   return (
-    <IssueEditorView
-      key={issueId}
+    <IntervalEditorView
+      key={intervalId}
       binding={binding}
-      issue={issue}
+      interval={interval}
       collection={collection}
-      issueId={issueId}
+      intervalId={intervalId}
     />
   );
 }
 
 // Separate component to prevent editor recreation on parent re-renders
-interface IssueEditorViewProps {
+interface IntervalEditorViewProps {
   binding: EditorBinding;
-  issue: Issue;
+  interval: Interval;
   collection: {
-    update(id: string, updater: (draft: Issue) => void): void;
+    update(id: string, updater: (draft: Interval) => void): void;
   };
-  issueId: string;
+  intervalId: string;
 }
 
-function IssueEditorView({ binding, issue, collection, issueId }: IssueEditorViewProps) {
-  const [title, setTitle] = useState(issue.title);
+function IntervalEditorView({
+  binding,
+  interval,
+  collection,
+  intervalId,
+}: IntervalEditorViewProps) {
+  const [title, setTitle] = useState(interval.title);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -116,7 +121,7 @@ function IssueEditorView({ binding, issue, collection, issueId }: IssueEditorVie
       ],
       editorProps: {
         attributes: {
-          class: 'tiptap-editor issue-essay',
+          class: 'tiptap-editor interval-essay',
         },
       },
     },
@@ -126,9 +131,9 @@ function IssueEditorView({ binding, issue, collection, issueId }: IssueEditorVie
   // Sync title from external changes (collaborative edits, other tabs)
   useEffect(() => {
     if (!isEditingTitle) {
-      setTitle(issue.title);
+      setTitle(interval.title);
     }
-  }, [issue.title, isEditingTitle]);
+  }, [interval.title, isEditingTitle]);
 
   // Focus input when entering edit mode
   useEffect(() => {
@@ -144,8 +149,8 @@ function IssueEditorView({ binding, issue, collection, issueId }: IssueEditorVie
 
   const handleTitleBlur = () => {
     setIsEditingTitle(false);
-    if (title.trim() !== issue.title) {
-      collection.update(issueId, (draft: Issue) => {
+    if (title.trim() !== interval.title) {
+      collection.update(intervalId, (draft: Interval) => {
         draft.title = title.trim() || 'Untitled';
         draft.updatedAt = Date.now();
       });

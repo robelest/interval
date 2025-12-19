@@ -1,14 +1,14 @@
 import { useCallback } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { useIssuesContext } from '../contexts/IssuesContext';
-import { Status, Priority, type Issue } from '../types/issue';
+import { useIntervalsContext } from '../contexts/IntervalsContext';
+import { Status, Priority, type Interval } from '../types/interval';
 
 /**
- * Hook for creating a new issue.
- * Shared between keyboard shortcut (Option+N) and New Issue button.
+ * Hook for creating a new interval.
+ * Shared between keyboard shortcut (Option+N) and New Interval button.
  */
-export function useCreateIssue() {
-  const { collection } = useIssuesContext();
+export function useCreateInterval() {
+  const { collection } = useIntervalsContext();
   const navigate = useNavigate();
 
   return useCallback(async () => {
@@ -26,10 +26,10 @@ export function useCreateIssue() {
       priority: Priority.NONE,
       createdAt: now,
       updatedAt: now,
-    } as Issue);
+    } as Interval);
 
-    // Small delay to ensure the issue is inserted before navigating
+    // Small delay to ensure the interval is inserted before navigating
     await new Promise((r) => setTimeout(r, 100));
-    navigate({ to: '/issues/$issueId', params: { issueId: id } });
+    navigate({ to: '/intervals/$intervalId', params: { intervalId: id } });
   }, [collection, navigate]);
 }

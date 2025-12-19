@@ -5,8 +5,8 @@ import {
   PriorityLabels,
   type StatusValue,
   type PriorityValue,
-  type Issue,
-} from '../types/issue';
+  type Interval,
+} from '../types/interval';
 import { StatusIcon } from './StatusIcon';
 import { PriorityIcon } from './PriorityIcon';
 import {
@@ -17,16 +17,16 @@ import {
   DropdownMenuRadioItem,
 } from './ui/dropdown-menu';
 
-interface IssuePropertiesProps {
-  issue: Issue;
-  onUpdate: (updates: Partial<Pick<Issue, 'status' | 'priority'>>) => void;
+interface IntervalPropertiesProps {
+  interval: Interval;
+  onUpdate: (updates: Partial<Pick<Interval, 'status' | 'priority'>>) => void;
 }
 
-export function IssueProperties({ issue, onUpdate }: IssuePropertiesProps) {
+export function IntervalProperties({ interval, onUpdate }: IntervalPropertiesProps) {
   const statusOptions = Object.values(Status) as StatusValue[];
   const priorityOptions = Object.values(Priority) as PriorityValue[];
 
-  const createdDate = new Date(issue.createdAt).toLocaleDateString('en-US', {
+  const createdDate = new Date(interval.createdAt).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
@@ -43,12 +43,12 @@ export function IssueProperties({ issue, onUpdate }: IssuePropertiesProps) {
         <span className="text-xs text-muted-foreground">Status</span>
         <DropdownMenu>
           <DropdownMenuTrigger className="flex items-center gap-2 w-full px-2 py-1.5 text-sm text-left rounded-sm hover:bg-muted transition-colors">
-            <StatusIcon status={issue.status} size={14} />
-            <span>{StatusLabels[issue.status]}</span>
+            <StatusIcon status={interval.status} size={14} />
+            <span>{StatusLabels[interval.status]}</span>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
             <DropdownMenuRadioGroup
-              value={issue.status}
+              value={interval.status}
               onValueChange={(v) => onUpdate({ status: v as StatusValue })}
             >
               {statusOptions.map((status) => (
@@ -67,12 +67,12 @@ export function IssueProperties({ issue, onUpdate }: IssuePropertiesProps) {
         <span className="text-xs text-muted-foreground">Priority</span>
         <DropdownMenu>
           <DropdownMenuTrigger className="flex items-center gap-2 w-full px-2 py-1.5 text-sm text-left rounded-sm hover:bg-muted transition-colors">
-            <PriorityIcon priority={issue.priority} size={14} />
-            <span>{PriorityLabels[issue.priority]}</span>
+            <PriorityIcon priority={interval.priority} size={14} />
+            <span>{PriorityLabels[interval.priority]}</span>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
             <DropdownMenuRadioGroup
-              value={issue.priority}
+              value={interval.priority}
               onValueChange={(v) => onUpdate({ priority: v as PriorityValue })}
             >
               {priorityOptions.map((priority) => (
