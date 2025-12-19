@@ -2,7 +2,7 @@ import tailwindcss from '@tailwindcss/vite';
 import { tanstackStart } from '@tanstack/react-start/plugin/vite';
 import viteReact from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
-import checker from 'vite-plugin-checker';
+import { nitro } from 'nitro/vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import viteTsConfigPaths from 'vite-tsconfig-paths';
 
@@ -16,14 +16,8 @@ const config = defineConfig({
     }),
     tailwindcss(),
     tanstackStart(),
+    nitro(),
     viteReact(),
-    checker({
-      typescript: true,
-      biome: {
-        command: 'check',
-      },
-      enableBuild: true,
-    }),
     // VitePWA only generates manifest.webmanifest
     // Service worker is generated post-build via scripts/generate-sw.ts
     VitePWA({

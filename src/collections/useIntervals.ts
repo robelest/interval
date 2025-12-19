@@ -8,7 +8,6 @@ import {
 import { api } from '../../convex/_generated/api';
 import { convexClient } from '../router';
 import type { Interval } from '../types/interval';
-// @ts-expect-error sql.js has no types
 import initSqlJs from 'sql.js';
 
 // Collection with utils.prose() for editor bindings

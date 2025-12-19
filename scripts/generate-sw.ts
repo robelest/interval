@@ -2,13 +2,13 @@ import { injectManifest } from 'workbox-build';
 import { resolve } from 'node:path';
 import { existsSync, unlinkSync, writeFileSync } from 'node:fs';
 
-const distClient = resolve(import.meta.dirname, '../dist/client');
+const distClient = resolve(import.meta.dirname, '../.output/public');
 const srcSw = resolve(import.meta.dirname, '../src/sw.ts');
 
 async function generateServiceWorker() {
-  // Check if dist/client exists
+  // Check if .output/public exists
   if (!existsSync(distClient)) {
-    console.error('Error: dist/client does not exist. Run `bun run build` first.');
+    console.error('Error: .output/public does not exist. Run `bun run build` first.');
     process.exit(1);
   }
 
