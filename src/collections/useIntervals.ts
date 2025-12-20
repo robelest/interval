@@ -1,15 +1,14 @@
-import { createCollection, type Collection } from '@tanstack/react-db';
+import { browser } from '$app/environment';
+import { createCollection, type Collection } from '@tanstack/db';
 import {
   convexCollectionOptions,
   persistence,
   type EditorBinding,
   type Persistence,
 } from '@trestleinc/replicate/client';
-import { api } from '../../convex/_generated/api';
-import { convexClient } from '../router';
-import type { Interval } from '../types/interval';
-import initSqlJs from 'sql.js';
-import sqlWasmUrl from 'sql.js/dist/sql-wasm.wasm?url';
+import { api } from '$convex/_generated/api';
+import type { Interval } from '$lib/types';
+import { getConvexClient } from '$lib/convex';
 
 // Collection with utils.prose() for editor bindings
 type IntervalsCollection = Collection<Interval> & {
@@ -27,23 +26,25 @@ let intervalsPersistence: Persistence | null = null;
  */
 export async function initIntervalsPersistence(): Promise<Persistence> {
   if (intervalsPersistence) return intervalsPersistence;
-
-  const SQL = await initSqlJs({
-    locateFile: () => sqlWasmUrl,
-  });
-  intervalsPersistence = await persistence.sqlite.browser(SQL, 'intervals');
+  // Use IndexedDB instead of SQLite - no WASM required
+  intervalsPersistence = persistence.indexeddb('intervals');
   return intervalsPersistence;
 }
 
 /**
  * Get the intervals collection singleton.
  * Must call initIntervalsPersistence() first.
+ * Only call in browser context.
  */
 export function useIntervals(): IntervalsCollection {
+  if (!browser) {
+    throw new Error('useIntervals can only be used in browser');
+  }
   if (!intervalsPersistence) {
     throw new Error('Call initIntervalsPersistence() before useIntervals()');
   }
   if (!intervalsCollection) {
+    const convexClient = getConvexClient();
     intervalsCollection = createCollection(
       convexCollectionOptions<Interval>({
         convexClient,
@@ -59,4 +60,4 @@ export function useIntervals(): IntervalsCollection {
 }
 
 // Re-export for convenience
-export type { Interval } from '../types/interval';
+export type { Interval } from '$lib/types';
