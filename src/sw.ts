@@ -1,5 +1,5 @@
 import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching';
-import { registerRoute, NavigationRoute } from 'workbox-routing';
+import { registerRoute, NavigationRoute, setCatchHandler } from 'workbox-routing';
 import { NetworkFirst, CacheFirst } from 'workbox-strategies';
 import { ExpirationPlugin } from 'workbox-expiration';
 
@@ -25,6 +25,20 @@ registerRoute(
     })
   )
 );
+
+// Catch handler for failed navigation requests - serve cached app shell
+// This enables offline navigation by serving the cached index page
+// The client-side router will handle the actual route with local SQLite data
+setCatchHandler(async ({ request }) => {
+  if (request.destination === 'document') {
+    const cache = await caches.open('pages-cache');
+    const cachedResponse = await cache.match('/intervals') || await cache.match('/');
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+  }
+  return Response.error();
+});
 
 // Convex API: NetworkFirst with timeout
 // Falls back to cached responses when offline

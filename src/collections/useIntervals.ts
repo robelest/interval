@@ -9,6 +9,7 @@ import { api } from '../../convex/_generated/api';
 import { convexClient } from '../router';
 import type { Interval } from '../types/interval';
 import initSqlJs from 'sql.js';
+import sqlWasmUrl from 'sql.js/dist/sql-wasm.wasm?url';
 
 // Collection with utils.prose() for editor bindings
 type IntervalsCollection = Collection<Interval> & {
@@ -28,7 +29,7 @@ export async function initIntervalsPersistence(): Promise<Persistence> {
   if (intervalsPersistence) return intervalsPersistence;
 
   const SQL = await initSqlJs({
-    locateFile: (file: string) => `https://sql.js.org/dist/${file}`,
+    locateFile: () => sqlWasmUrl,
   });
   intervalsPersistence = await persistence.sqlite.browser(SQL, 'intervals');
   return intervalsPersistence;

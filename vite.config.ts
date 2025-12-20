@@ -2,7 +2,7 @@ import tailwindcss from '@tailwindcss/vite';
 import { tanstackStart } from '@tanstack/react-start/plugin/vite';
 import viteReact from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
-import { nitro } from 'nitro/vite';
+import { nodePolyfills } from 'vite-plugin-node-polyfills';
 import { VitePWA } from 'vite-plugin-pwa';
 import viteTsConfigPaths from 'vite-tsconfig-paths';
 
@@ -11,18 +11,27 @@ const config = defineConfig({
     port: 4000,
   },
   plugins: [
+    {
+      ...nodePolyfills({
+        globals: {
+          process: true,
+        },
+      }),
+      applyToEnvironment: (env: { name: string }) => env.name === 'client',
+    },
     viteTsConfigPaths({
       projects: ['./tsconfig.json'],
     }),
     tailwindcss(),
     tanstackStart(),
-    nitro(),
     viteReact(),
-    // VitePWA only generates manifest.webmanifest
-    // Service worker is generated post-build via scripts/generate-sw.ts
+    // VitePWA with injectManifest for custom service worker
     VitePWA({
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.ts',
       registerType: 'prompt',
-      injectRegister: false, // We use useRegisterSW manually in ReloadPrompt.tsx
+      injectRegister: false, // ReloadPrompt handles registration via virtual:pwa-register/react
       includeAssets: ['favicon.ico', 'favicon.svg', 'robots.txt'],
       manifest: {
         name: 'Interval',
@@ -45,8 +54,12 @@ const config = defineConfig({
           },
         ],
       },
+      injectManifest: {
+        globPatterns: ['**/*.{js,css,ico,png,svg,woff2,wasm}'],
+        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024, // 3 MiB
+      },
       devOptions: {
-        enabled: false,
+        enabled: true,
         type: 'module',
         suppressWarnings: true,
       },
